@@ -115,31 +115,29 @@ function cleanBuildExceptZip() {
     });
 }
 
-(() => {
-    try {
-        const files = fs.readdirSync(sourceDir, { withFileTypes: true });
+try {
+    const files = fs.readdirSync(sourceDir, { withFileTypes: true });
 
-        files.forEach(item => {
-            const fullPath = path.join(sourceDir, item.name);
-            if (item.isFile() && shouldProcessFile(item.name)) {
-                processFile(fullPath);
-            }
-        });
-
-        const shouldZip = process.argv.includes('--zip');
-
-        if (shouldZip) {
-            createZipArchive().then(() => {
-                cleanBuildExceptZip();
-                console.log('✔ Build completed and compressed to build.zip');
-            }).catch(err => {
-                console.error('❌ Failed to create ZIP:', err);
-            });
-        } else {
-            console.log('✔ Build and obfuscation completed');
+    files.forEach(item => {
+        const fullPath = path.join(sourceDir, item.name);
+        if (item.isFile() && shouldProcessFile(item.name)) {
+            processFile(fullPath);
         }
+    });
 
-    } catch (err) {
-        console.error('Build failed:', err);
+    const shouldZip = process.argv.includes('--zip');
+
+    if (shouldZip) {
+        createZipArchive().then(() => {
+            cleanBuildExceptZip();
+            console.log('✔ Build completed and compressed to build.zip');
+        }).catch(err => {
+            console.error('❌ Failed to create ZIP:', err);
+        });
+    } else {
+        console.log('✔ Build and obfuscation completed');
     }
-})();
+
+} catch (err) {
+    console.error('Build failed:', err);
+}
