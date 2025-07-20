@@ -60,6 +60,8 @@ local function parseAttributes(raw)
     return props
 end
 
+-- TODO: merge skipWhitespace and skipComment since both a re compeltely disregarded anyways
+-- merge into skipWhitespace
 local function skipWhitespace(source, i)
     while i <= #source and source:sub(i, i):match("%s") do
         i = i + 1
@@ -78,8 +80,7 @@ local function skipComment(source, i)
     return i
 end
 
--- TODO: rewrite to not use goto, not advised in luvit
-
+-- TODO: rewrite to not use goto, not advised in luvit or lua generally
 local function tokenise(source)
     local tokens = {}
     local i = 1

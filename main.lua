@@ -26,23 +26,16 @@ p()
 local jenc = require("json").encode
 
 print(jenc(t))
+
 print()
 print()
 
 local parsed = parse(t)
 print(jenc(parsed))
 
-
-
-
-print()
-print()
-print()
-print()
-print()
 print()
 print()
 
 local serialise = require("./html/serialiser")
-fs.writeFileSync("./src/out.html", serialise(parsed)) -- obviously just a test
+--fs.writeFileSync("./src/out.html", serialise(parsed)) -- obviously just a test
 -- in the real tool, we wont EVER be writing to src, only reading
