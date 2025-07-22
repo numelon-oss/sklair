@@ -1,4 +1,4 @@
-local arr = require("./util/efficientArray")
+local arr = require("../util/efficientArray")
 
 -- void elements are self closing tags (implied close even if close tag not present)
 -- https://developer.mozilla.org/en-US/docs/Glossary/Void_element

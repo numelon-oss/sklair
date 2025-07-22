@@ -1,4 +1,4 @@
-local voidElements = require("./voidElements")
+local voidElements = require("./elements/void")
 
 local fmt = string.format
 
@@ -26,6 +26,7 @@ local function construct(node)
         local _children = node.children or {}
         if voidElements[node.tag] and #_children == 0 then
             -- TODO: create another void list which doesnt require trailing slash to close it, e.g. br
+            -- actually void elements dont even need the trailing slash for closing?!
             return open .. " />"
         end
 

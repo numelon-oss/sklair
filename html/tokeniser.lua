@@ -1,3 +1,7 @@
+local function strip(str)
+    return str:gsub("^%s*", ""):gsub("%s*$", "")
+end
+
 local function parseAttributes(raw)
     local props = {}
     local i = 1
@@ -69,7 +73,7 @@ local function skipWhitespace(source, i)
     return i
 end
 
-local function skipComment(source, i)
+local function skipComments(source, i)
     if source:sub(i, i + 3) == "<!--" then
         i = i + 4
         while i <= #source and source:sub(i, i + 2) ~= "-->" do
@@ -85,8 +89,8 @@ local function tokenise(source)
     local tokens = {}
     local i = 1
     while i <= #source do
-        i = skipWhitespace(source, i)
-        i = skipComment(source, i)
+        --i = skipWhitespace(source, i)
+        i = skipComments(source, i)
 
         local c = source:sub(i, i)
 
@@ -97,7 +101,7 @@ local function tokenise(source)
             if nextChar == "!" then
                 local j = i + 2
                 while j <= #source and source:sub(j, j) ~= ">" do j = j + 1 end
-                local inner = source:sub(i + 2, j - 1):gsub("^%s*", ""):gsub("%s*$", "")
+                local inner = strip(source:sub(i + 2, j - 1))
                 tokens[#tokens + 1] = { type = "directive", value = inner }
                 i = j + 1
                 goto continue
@@ -107,7 +111,7 @@ local function tokenise(source)
             if nextChar == "/" then
                 local j = i + 2
                 while j <= #source and source:sub(j, j) ~= ">" do j = j + 1 end
-                local tagName = source:sub(i + 2, j - 1):gsub("^%s*", ""):gsub("%s*$", "")
+                local tagName = strip(source:sub(i + 2, j - 1))
                 tokens[#tokens + 1] = { type = "tag_close", name = tagName }
                 i = j + 1
                 goto continue
@@ -119,6 +123,8 @@ local function tokenise(source)
             local chunk = source:sub(i + 1, j - 1)
 
             -- detect self-closing
+            -- TODO: "self closing" tags are actually just regular tags with a trailing slash
+            -- they are actually completely ignored by browsers, maybe we can ignore too?
             local selfClose = chunk:sub(-1) == "/"
             if selfClose then chunk = chunk:sub(1, -2) end
 
@@ -170,7 +176,8 @@ local function tokenise(source)
             -- text node
             local j = i
             while j <= #source and source:sub(j, j) ~= "<" do j = j + 1 end
-            local text = source:sub(i, j - 1):gsub("^%s*", ""):gsub("%s*$", "")
+            --local text = strip(source:sub(i, j - 1))
+            local text = source:sub(i, j - 1)
             if #text > 0 then
                 tokens[#tokens + 1] = { type = "text", value = text }
             end

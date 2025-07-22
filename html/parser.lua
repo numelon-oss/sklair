@@ -1,4 +1,5 @@
-local voidElements = require("./voidElements")
+local sanitise = require("./sanitiser")
+local voidElements = require("./elements/void")
 
 local insert = table.insert
 local remove = table.remove
@@ -46,6 +47,9 @@ local function parse(tokens)
             end
         end
     end
+
+    -- TODO: sanitise properly
+    sanitise(root)
 
     return root
 end
