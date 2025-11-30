@@ -24,7 +24,7 @@ func clone(n *html.Node) *html.Node {
 	}
 
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
-		clown.AppendChild(clone(clown))
+		clown.AppendChild(clone(child))
 	}
 
 	return clown
