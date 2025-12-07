@@ -2,6 +2,7 @@ package discovery
 
 import (
 	"os"
+	"path/filepath"
 	"strings"
 )
 
@@ -16,7 +17,11 @@ func ComponentDiscovery(source string) (map[string]string, error) {
 
 	for _, file := range dir {
 		if !file.IsDir() {
-			components[strings.ToLower(file.Name())] = file.Name()
+			name := file.Name()
+			ext := filepath.Ext(name)
+
+			trimmed := strings.TrimSuffix(name, ext)
+			components[strings.ToLower(trimmed)] = name
 		}
 	}
 

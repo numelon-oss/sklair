@@ -10,6 +10,7 @@ import (
 	"sklair/htmlUtilities"
 	"sklair/logger"
 	"strings"
+	"time"
 
 	"golang.org/x/net/html"
 )
@@ -19,6 +20,8 @@ const SrcDir = "src"
 
 func main() {
 	logger.InitShared(logger.LevelDebug)
+
+	start := time.Now()
 
 	// TODO: add a function to logger which has a cool processing animation or something
 	logger.Info("Discovering documents...")
@@ -35,6 +38,8 @@ func main() {
 		logger.Error("Could not scan components : %s", err.Error())
 		return
 	}
+
+	//fmt.Println(components)
 
 	componentCache := caching.ComponentCache{
 		Static:  make(map[string]*caching.Component),
@@ -66,7 +71,7 @@ func main() {
 					_, dynamicExists := componentCache.Dynamic[tag]
 					_, staticExists := componentCache.Static[tag]
 
-					if !(dynamicExists || staticExists) {
+					if !(dynamicExists || staticExists) && tag != "lua" {
 						componentSrc, exists := components[tag]
 						if !exists {
 							logger.Info("Non-standard tag found in HTML and no component present : %s, assuming JS tag", tag)
@@ -74,7 +79,7 @@ func main() {
 						}
 
 						logger.Info("Processing and caching tag %s...", tag)
-						c, dynamic, err := caching.Cache(ComponentsDir, componentSrc)
+						c, dynamic, err := caching.Cache(componentPath, componentSrc)
 						if err != nil {
 							logger.Error("Could not cache component %s : %s", componentSrc, err.Error())
 							return
@@ -99,8 +104,8 @@ func main() {
 		logger.Info("Found %d tags to replace in %s", len(toReplace), filePath)
 
 		for _, node := range toReplace {
-			dynComponent, dynamicExists := componentCache.Dynamic[node.Data]
 			stcComponent, staticExists := componentCache.Static[node.Data]
+			dynComponent, dynamicExists := componentCache.Dynamic[node.Data]
 
 			if staticExists {
 				parent := node.Parent
@@ -113,51 +118,14 @@ func main() {
 			} else if dynamicExists {
 				fmt.Println(dynComponent)
 				logger.Warning("Dynamic components are not implemented yet, skipping %s...", node.Data)
+				continue
+			} else if node.Data == "lua" {
+				logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
+				continue
 			} else {
 				logger.Info("Component %s not in cache, assuming JS tag and skipping...", node.Data)
 				continue
 			}
-
-			//componentPath := filepath.Join(ComponentsDir, node.Data+".html")
-			//
-			//if _, err := os.Stat(componentPath); err != nil {
-			//	logger.Error("Could not find component %s : %s", componentPath, err.Error())
-			//	return
-			//} else {
-			//	f, err := os.ReadFile(componentPath)
-			//	if err != nil {
-			//		logger.Error("Could not read component %s : %s", componentPath, err.Error())
-			//		return
-			//	}
-			//
-			//	component, err := html.Parse(bytes.NewReader(f))
-			//	if err != nil {
-			//		logger.Error("Could not parse component %s : %s", componentPath, err.Error())
-			//		return
-			//	}
-			//
-			//	// even though components are usually bare (without doctype, head, body, etc), we still need to find the "body" (bc parsed)
-			//	body := component.FirstChild
-			//	for body != nil && body.Data != "html" {
-			//		body = body.NextSibling
-			//	}
-			//	if body != nil {
-			//		body = body.FirstChild
-			//		for body != nil && body.Data != "body" {
-			//			body = body.NextSibling
-			//		}
-			//	}
-			//
-			//	if body != nil {
-			//		parent := node.Parent
-			//		if parent != nil {
-			//			for child := body.FirstChild; child != nil; child = child.NextSibling {
-			//				parent.InsertBefore(htmlUtilities.Clone(child), node)
-			//			}
-			//			parent.RemoveChild(node)
-			//		}
-			//	}
-			//}
 		}
 
 		newWriter := bytes.NewBuffer(nil)
@@ -183,5 +151,8 @@ func main() {
 		}
 
 		logger.Info("Saved to %s", outPath)
+		logger.Debug("Output : %s", string(newWriter.Bytes()))
 	}
+
+	logger.Info("Finished in %s", time.Since(start))
 }

@@ -18,8 +18,8 @@ type ComponentCache struct {
 	Dynamic map[string]*Component
 }
 
-func Cache(source string, name string) (*Component, bool, error) {
-	path := filepath.Join(source, name+".html")
+func Cache(source string, fileName string) (*Component, bool, error) {
+	path := filepath.Join(source, fileName)
 
 	//if _, err := os.Stat(path); err != nil {
 	//	return nil, err
@@ -31,6 +31,7 @@ func Cache(source string, name string) (*Component, bool, error) {
 	}
 
 	// this is VERY naive but it actually works, we simply check for an opening lua tag
+	// TODO: do the same check for html files
 	hasLua := bytes.Contains(f, []byte("<lua"))
 	component, err := html.Parse(bytes.NewReader(f))
 	if err != nil {
@@ -38,20 +39,23 @@ func Cache(source string, name string) (*Component, bool, error) {
 	}
 
 	// even though components are usually bare (without doctype, head, body, etc), we still need to find the "body" (bc parsed)
-	//body := component.FirstChild
-	//for body != nil && body.Data != "html" {
-	//	body = body.NextSibling
-	//}
-	//if body != nil {
-	//	body = body.FirstChild
-	//	for body != nil && body.Data != "body" {
-	//		body = body.NextSibling
-	//	}
-	//}
-	//
-	//if (body != nil) && (body.FirstChild != nil) {
-	//	component = body.FirstChild
-	//}
+	// because x/net/html automatically interprets the file as if its a full browser
+	// ie it adds a doctype, head, body, etc tags automatically even if our input file doesnt have them
+
+	body := component.FirstChild
+	for body != nil && body.Data != "html" {
+		body = body.NextSibling
+	}
+	if body != nil {
+		body = body.FirstChild
+		for body != nil && body.Data != "body" {
+			body = body.NextSibling
+		}
+	}
+
+	if (body != nil) && (body.FirstChild != nil) {
+		component = body.FirstChild
+	}
 
 	// old code before refactoring
 	/*
@@ -90,49 +94,3 @@ func Cache(source string, name string) (*Component, bool, error) {
 
 	return &Component{component, hasLua}, hasLua, nil
 }
-
-/*
-for _, node := range toReplace {
-
-			componentPath := filepath.Join("components", node.Data+".html")
-
-			if _, err := os.Stat(componentPath); err != nil {
-				logger.Error("Could not find component %s : %s", componentPath, err.Error())
-				return
-			} else {
-				f, err := os.ReadFile(componentPath)
-				if err != nil {
-					logger.Error("Could not read component %s : %s", componentPath, err.Error())
-					return
-				}
-
-				component, err := html.Parse(bytes.NewReader(f))
-				if err != nil {
-					logger.Error("Could not parse component %s : %s", componentPath, err.Error())
-					return
-				}
-
-				// even though components are usually bare (without doctype, head, body, etc), we still need to find the "body" (bc parsed)
-				body := component.FirstChild
-				for body != nil && body.Data != "html" {
-					body = body.NextSibling
-				}
-				if body != nil {
-					body = body.FirstChild
-					for body != nil && body.Data != "body" {
-						body = body.NextSibling
-					}
-				}
-
-				if body != nil {
-					parent := node.Parent
-					if parent != nil {
-						for child := body.FirstChild; child != nil; child = child.NextSibling {
-							parent.InsertBefore(htmlUtilities.Clone(child), node)
-						}
-						parent.RemoveChild(node)
-					}
-				}
-			}
-		}
-*/
