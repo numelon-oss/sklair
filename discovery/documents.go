@@ -14,22 +14,22 @@ type DocumentLists struct {
 }
 
 var defaultExcludes = []string{
-	"components",
-	".git",
-	".vscode",
-	".idea",
-	".env",
-	"node_modules",
-	"build",
-	"sklair.json",
+	"**/components/**",
+	"**/.git/**",
+	"**/.vscode/**",
+	"**/.idea/**",
+	"**/.env",
+	"**/node_modules/**",
+	"**/build/**",
+	"**/sklair.json",
 }
 
 func splitPatterns(patterns []string) (excludes, includes []string) {
 	for _, pattern := range patterns {
 		if strings.HasPrefix(pattern, "!") {
-			excludes = append(includes, pattern[1:])
+			includes = append(includes, pattern[1:])
 		} else {
-			includes = append(excludes, pattern)
+			excludes = append(excludes, pattern)
 		}
 	}
 
@@ -61,15 +61,9 @@ func DocumentDiscovery(root string, excludes []string) (*DocumentLists, error) {
 	excludes = append(defaultExcludes, excludes...)
 	excludePatterns, includePatterns := splitPatterns(excludes)
 
-	// TODO: fix the exclusion logic tomorrow
 	err := filepath.Walk(root, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
-		}
-
-		// skip directories since they will be walked by filepath.Walk later anyway
-		if info.IsDir() {
-			return nil
 		}
 
 		relPath, err := filepath.Rel(root, path)
@@ -77,6 +71,10 @@ func DocumentDiscovery(root string, excludes []string) (*DocumentLists, error) {
 			return err
 		}
 		relPath = filepath.ToSlash(relPath)
+
+		if relPath == "." {
+			return nil // NEVER exclude root!!
+		}
 
 		// doublestar excludes
 		if isExcluded(relPath, excludePatterns, includePatterns) {
@@ -86,14 +84,17 @@ func DocumentDiscovery(root string, excludes []string) (*DocumentLists, error) {
 			return nil
 		}
 
+		// will be walked by filepath.Walk later anyway
+		if info.IsDir() {
+			return nil
+		}
+
 		ext := filepath.Ext(strings.ToLower(info.Name()))
-		if !info.IsDir() {
-			// TODO: perhaps allow this file ext to be customisable?
-			if ext == ".html" || ext == ".shtml" {
-				lists.HtmlFiles = append(lists.HtmlFiles, path)
-			} else {
-				lists.StaticFiles = append(lists.StaticFiles, path)
-			}
+		// TODO: perhaps allow this file ext to be customisable?
+		if ext == ".html" || ext == ".shtml" {
+			lists.HtmlFiles = append(lists.HtmlFiles, path)
+		} else {
+			lists.StaticFiles = append(lists.StaticFiles, path)
 		}
 
 		return nil

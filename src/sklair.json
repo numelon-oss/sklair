@@ -6,7 +6,13 @@
 
 	"input": "./",
 	"components": "./components",
-	"exclude": ["**/.*", "!*/.htaccess", "**.md", "**.psd", "**.DS_*", "**._*"],
+	"exclude": ["**/.*",
+      "!*/.htaccess",
+      "**/*.md",
+      "**/*.psd",
+      "**/.DS_*",
+      "**/._*"
+    ],
 
 	"exclude_compile": ["someBigFile.html"],
 	"output": "./build",
