@@ -3,7 +3,6 @@ package caching
 import (
 	"bytes"
 	"errors"
-	"fmt"
 	"os"
 	"path/filepath"
 	"sklair/htmlUtilities"
@@ -61,6 +60,6 @@ func Cache(source string, fileName string) (*Component, bool, error) {
 	// for head, perform deduplication when multiple components in same document share head stuff
 	// for body, just insert as usual
 
-	fmt.Println(children)
+	//fmt.Println(children)
 	return &Component{children, hasLua}, hasLua, nil
 }

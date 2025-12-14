@@ -38,7 +38,7 @@ func main() {
 	outputPath := filepath.Join(configDir, config.Output)
 
 	// TODO: add a function to logger which has a cool processing animation or something
-	logger.Info("Discovering documents...")
+	logger.Info("Indexing documents...")
 	excludes := append(config.Exclude, config.Components, config.Output)
 	scanned, err := discovery.DocumentDiscovery(inputPath, excludes)
 	if err != nil {
@@ -46,14 +46,12 @@ func main() {
 		return
 	}
 
-	logger.Info("Discovering components...")
+	logger.Info("Indexing components...")
 	components, err := discovery.ComponentDiscovery(componentsPath)
 	if err != nil {
 		logger.Error("Could not scan components : %s", err.Error())
 		return
 	}
-
-	//fmt.Println(components)
 
 	componentCache := caching.ComponentCache{
 		Static:  make(map[string]*caching.Component),
@@ -70,6 +68,7 @@ func main() {
 		}
 	}
 
+	logger.Info("Resolving components usage and compiling...")
 	for _, filePath := range scanned.HtmlFiles {
 		content, err := os.ReadFile(filePath)
 		if err != nil {
@@ -98,7 +97,7 @@ func main() {
 					if !(dynamicExists || staticExists) && tag != "lua" {
 						componentSrc, exists := components[tag]
 						if !exists {
-							logger.Info("Non-standard tag found in HTML and no component present : %s, assuming JS tag", tag)
+							logger.Warning("Non-standard tag found in HTML and no component present : %s, assuming JS tag", tag)
 							continue
 						}
 
@@ -131,7 +130,7 @@ func main() {
 			stcComponent, staticExists := componentCache.Static[originalTag.Data]
 			dynComponent, dynamicExists := componentCache.Dynamic[originalTag.Data]
 
-			fmt.Println(originalTag.Data)
+			//fmt.Println(originalTag.Data)
 
 			if staticExists {
 				parent := originalTag.Parent
@@ -152,7 +151,7 @@ func main() {
 				logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
 				continue
 			} else {
-				logger.Info("Component %s not in cache, assuming JS tag and skipping...", originalTag.Data)
+				logger.Warning("Component %s not in cache, assuming JS tag and skipping...", originalTag.Data)
 				continue
 			}
 		}
@@ -194,6 +193,11 @@ func main() {
 		logger.Info("Saved to %s", outPath)
 	}
 
+	processingEnd := time.Since(start)
+	logger.EmptyLine()
+	logger.Info("Copying static files...")
+
+	staticStart := time.Now()
 	for _, filePath := range scanned.StaticFiles {
 		relPath, err := filepath.Rel(inputPath, filePath)
 		if err != nil {
@@ -219,5 +223,8 @@ func main() {
 		logger.Info("Copied static file to %s", outPath)
 	}
 
-	logger.Info("Finished in %s", time.Since(start))
+	logger.EmptyLine()
+	logger.Info("Compilation time : %s", processingEnd)
+	logger.Info("Static copy time : %s", time.Since(staticStart))
+	logger.Info("Total processing time : %s", time.Since(start))
 }

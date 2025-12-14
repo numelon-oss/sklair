@@ -30,6 +30,10 @@ var defaultConfig = SklairConfig{
 	},
 	Input:  "./",
 	Output: "./build",
+
+	Minify:    false,
+	Obfuscate: false, // this pertains to JS obfuscation, not HTML.. you cant really ofuscate HTML per se
+	// TODO: likely rename "Obfuscate" to "ObfuscateJS" and make it another struct with more properties and customisation
 }
 
 func Load(path string) (*SklairConfig, error) {

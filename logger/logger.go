@@ -66,8 +66,10 @@ func (l *Logger) log(level LogLevel, format string, args ...any) {
 
 	// coloured stdout
 	coloured := fmt.Sprintf("%s%s%s | %s\n", tag.Colour, tag.Raw, Reset, formatted)
-	fmt.Fprint(l.stdout, coloured)
+	_, _ = fmt.Fprint(l.stdout, coloured)
 }
+
+func (l *Logger) emptyLine() { _, _ = fmt.Fprintln(l.stdout) }
 
 // shortcut methods
 func (l *Logger) Error(format string, args ...any)   { l.log(LevelError, format, args...) }
@@ -75,6 +77,7 @@ func (l *Logger) Warning(format string, args ...any) { l.log(LevelWarning, forma
 func (l *Logger) Info(format string, args ...any)    { l.log(LevelInfo, format, args...) }
 func (l *Logger) Debug(format string, args ...any)   { l.log(LevelDebug, format, args...) }
 func (l *Logger) P(format string, args ...any)       { l.log(LevelNone, format, args...) }
+func (l *Logger) EmptyLine()                         { l.emptyLine() }
 
 // shared logger
 var shared *Logger
@@ -89,3 +92,4 @@ func Warning(format string, args ...any) { shared.log(LevelWarning, format, args
 func Info(format string, args ...any)    { shared.log(LevelInfo, format, args...) }
 func Debug(format string, args ...any)   { shared.log(LevelDebug, format, args...) }
 func P(format string, args ...any)       { shared.log(LevelNone, format, args...) }
+func EmptyLine()                         { shared.emptyLine() }
