@@ -1,20 +1,16 @@
 {
-  "preventFOUC": {
-    "enabled": true,
-    "colour": "#1a1a1a"
-  },
+	"preventFOUC": {
+		"enabled": true,
+		"colour": "#1a1a1a"
+	},
 
-  "input":  "./",
-  "components": "./components",
-  "exclude": [
-    "*/.*",
-    "!*/.htaccess",
-    "**.md"
-  ],
+	"input": "./",
+	"components": "./components",
+	"exclude": ["**/.*", "!*/.htaccess", "**.md", "**.psd", "**.DS_*", "**._*"],
 
-  "exclude_compile": ["someBigFile.html"],
-  "output": "./build",
+	"exclude_compile": ["someBigFile.html"],
+	"output": "./build",
 
-  "minify": true,
-  "obfuscate": true
+	"minify": true,
+	"obfuscate": true
 }

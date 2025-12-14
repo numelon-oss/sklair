@@ -2,8 +2,8 @@ tailwind.config = {
     theme: {
         extend: {
             colors: {
-                background: "#faeee5", // soft peach
-                alternative: "#ead8c9" // even softer peach
+                background: "#faeee5",
+                alternative: "#ead8c9"
             },
             fontFamily: {
                 main: ["Libre Baskerville", "serif"],
