@@ -1,111 +1,126 @@
-<div id="top" class="relative z-30">
-    <div
-        class="w-full flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 gap-3 sm:gap-0 border-b border-gray-200 shadow-sm">
-        <img src="https://wcdn.numelon.com/branding/corporate-black.svg" alt="Numelon Logo" class="h-8 sm:h-8">
+<!DOCTYPE html>
+<html>
 
-        <div class="flex border border-gray-300 overflow-hidden sm:ml-auto">
-            <a href="https://discord.gg/Hr3GYj7nsc" target="_blank"
-                class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
-                <i class="fab fa-discord"></i>
-            </a>
-            <a href="https://github.com/numelon-oss" target="_blank"
-                class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
-                <i class="fab fa-github"></i>
-            </a>
-            <a href="mailto:support@numelon.com"
-                class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
-                <i class="fas fa-envelope"></i>
-            </a>
-            <button id="menuToggle"
-                class="w-10 h-10 flex items-center justify-center bg-gray-900 text-white hover:bg-gray-600 transition">
-                <i class="fas fa-bars"></i>
-            </button>
-        </div>
+<head>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js" defer></script>
+</head>
 
-    </div>
+<body>
+    <div id="top" class="absolute top-0 left-0 w-full z-30">
+        <div
+            class="w-full flex flex-col sm:flex-row items-center justify-between px-4 sm:px-6 py-4 gap-3 sm:gap-0 border-b border-gray-200 shadow-sm">
+            <img src="../branding/logo-monochrome.dark.svg" alt="Numelon Logo" class="h-8 sm:h-8">
 
-    <!-- TODO: for numelon services, get them from the numelon one api for the public services discovery yk -->
-    <div id="expandedMenu"
-        class="absolute top-full left-0 w-full origin-top scale-y-0 opacity-0 transition-transform duration-500 ease-out bg-alternative px-6 py-0 text-sm">
-
-        <div class="pt-4">
-            <p class="mb-4 text-gray-700 font-medium">Explore the projects and services offered by Numelon.</p>
-            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-4">
-                <!-- TODO: this should be dynamic! -->
-
-                <a href="https://rubis.app" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/rubis.png" alt="Rubiš" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Rubiš</div>
-                        <div class="text-gray-600 text-xs">Secure, versatile platform for file / text storage and
-                            delivery.</div>
-                    </div>
+            <div class="flex border border-gray-300 overflow-hidden sm:ml-auto">
+                <a href="https://discord.gg/Hr3GYj7nsc" target="_blank"
+                    class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
+                    <i class="fab fa-discord"></i>
                 </a>
-
-                <a href="https://nue.nu" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/nue.png" alt="Nue Programming Language" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Nue Programming Language</div>
-                        <div class="text-gray-600 text-xs">A programming language built for clarity, beauty and
-                            power -
-                            without technical compromise.</div>
-                    </div>
+                <a href="https://github.com/numelon-oss" target="_blank"
+                    class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
+                    <i class="fab fa-github"></i>
                 </a>
-
-                <a href="https://funk.numelon.com" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/funk.png" alt="FUNK" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">FUNK</div>
-                        <div class="text-gray-600 text-xs">A Discord music bot where music meets simplicity and good
-                            times.</div>
-                    </div>
+                <!-- <a href="https://sklair.numelon.com/docs"
+                    class="w-10 h-10 flex items-center justify-center border-r border-gray-300 hover:bg-gray-100 transition">
+                    <i class="fas fa-book"></i>
+                </a> -->
+                <!-- TODO: note how border-r class is not applied to the last element -->
+                <a href="https://sklair.numelon.com/docs"
+                    class="w-10 h-10 flex items-center justify-center border-gray-300 hover:bg-gray-100 transition">
+                    <i class="fas fa-book"></i>
                 </a>
-
-                <a href="https://kavun.cloud" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/kavuncloud.png" alt="Kavun Cloud" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Kavun Cloud</div>
-                        <div class="text-gray-600 text-xs">Application hosting built by developers, for developers.
-                        </div>
-                    </div>
-                </a>
-
-                <a href="https://world.numelon.com" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/numelonworld.png" alt="Numelon World" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Numelon World</div>
-                        <div class="text-gray-600 text-xs">From anarchy to survival with order, a Minecraft server
-                            with
-                            a kind community.
-                        </div>
-                    </div>
-                </a>
-
-                <a href="https://nse.finance" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/nse.png" alt="Numelon Stock Exchange" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Numelon Stock Exchange (Archived)</div>
-                        <div class="text-gray-600 text-xs">The most advanced fictional stock exchange ever.
-                        </div>
-                    </div>
-                </a>
-
-                <a href="https://renjin.tech" target="_blank"
-                    class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
-                    <img src="img/renjin.png" alt="Renjin" class="w-10 h-10 mr-4" />
-                    <div>
-                        <div class="font-semibold">Renjin Public APIs</div>
-                        <div class="text-gray-600 text-xs">Public APIs by the cybersecurity subsidiary of Numelon.
-                        </div>
-                    </div>
-                </a>
+                <!-- <button id="menuToggle"
+                    class="w-10 h-10 flex items-center justify-center bg-gray-900 text-white hover:bg-gray-600 transition">
+                    <i class="fas fa-bars"></i>
+                </button> -->
             </div>
+
         </div>
+
+        <!-- TODO: remove numelon references and make suitable for sklair -->
+        <!-- <div id="expandedMenu"
+            class="absolute top-full left-0 w-full origin-top scale-y-0 opacity-0 transition-transform duration-500 ease-out bg-alternative px-6 py-0 text-sm">
+
+            <div class="pt-4">
+                <p class="mb-4 text-gray-700 font-medium">Explore the projects and services offered by Numelon.</p>
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 pb-4">
+                    <a href="https://rubis.app" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/rubis.png" alt="Rubiš" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Rubiš</div>
+                            <div class="text-gray-600 text-xs">Secure, versatile platform for file / text storage and
+                                delivery.</div>
+                        </div>
+                    </a>
+
+                    <a href="https://nue.nu" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/nue.png" alt="Nue Programming Language" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Nue Programming Language</div>
+                            <div class="text-gray-600 text-xs">A programming language built for clarity, beauty and
+                                power -
+                                without technical compromise.</div>
+                        </div>
+                    </a>
+
+                    <a href="https://funk.numelon.com" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/funk.png" alt="FUNK" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">FUNK</div>
+                            <div class="text-gray-600 text-xs">A Discord music bot where music meets simplicity and good
+                                times.</div>
+                        </div>
+                    </a>
+
+                    <a href="https://kavun.cloud" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/kavuncloud.png" alt="Kavun Cloud" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Kavun Cloud</div>
+                            <div class="text-gray-600 text-xs">Application hosting built by developers, for developers.
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://world.numelon.com" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/numelonworld.png" alt="Numelon World" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Numelon World</div>
+                            <div class="text-gray-600 text-xs">From anarchy to survival with order, a Minecraft server
+                                with
+                                a kind community.
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://nse.finance" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/nse.png" alt="Numelon Stock Exchange" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Numelon Stock Exchange (Archived)</div>
+                            <div class="text-gray-600 text-xs">The most advanced fictional stock exchange ever.
+                            </div>
+                        </div>
+                    </a>
+
+                    <a href="https://renjin.tech" target="_blank"
+                        class="flex items-start p-4 bg-background hover:bg-gray-100 transition rounded shadow-sm border border-gray-200">
+                        <img src="img/renjin.png" alt="Renjin" class="w-10 h-10 mr-4" />
+                        <div>
+                            <div class="font-semibold">Renjin Public APIs</div>
+                            <div class="text-gray-600 text-xs">Public APIs by the cybersecurity subsidiary of Numelon.
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div> -->
     </div>
-</div>
+</body>
+
+</html>

@@ -6,8 +6,8 @@ tailwind.config = {
                 alternative: "#ead8c9" // even softer peach
             },
             fontFamily: {
-                main: ["Manrope", "sans-serif"],
-                secondary: ["Libre Baskerville", "serif"],
+                main: ["Libre Baskerville", "serif"],
+                secondary: ["Manrope", "sans-serif"],
             },
 
 

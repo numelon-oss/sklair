@@ -10,18 +10,19 @@
 
     <link rel="icon" href="branding/icon-colour.square.png" />
 
-    <meta name="theme-color" content="#f8f5f0">
+    <meta name="theme-color" content="#faeee5">
 
+    <!-- TODO: turn this SEO stuff into an <OpenGraph> component later -->
     <meta name="title" content="Sklair | HTML deserved better.">
     <meta property="og:title" content="Sklair | HTML deserved better.">
     <meta name="twitter:title" content="Sklair | HTML deserved better.">
 
     <meta name="description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential — without the frameworks.">
+        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
     <meta property="og:description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential — without the frameworks.">
+        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
     <meta name="twitter:description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential — without the frameworks.">
+        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
 
     <meta property="og:image" content="branding/icon-colour.square.png">
     <meta name="twitter:image" content="branding/icon-colour.square.png">
@@ -42,7 +43,7 @@
     <title>Sklair | HTML deserved better.</title>
 </head>
 
-<body class="font-main">
+<body class="font-secondary">
     <MenuBar></MenuBar>
 
     <section class="w-full min-h-screen flex items-center justify-center bg-background border-t border-gray-200 px-6">
@@ -52,10 +53,10 @@
 
             <div class="relative z-20 h-full w-full flex items-end justify-start px-8 pb-12 text-white">
                 <div class="max-w-3xl">
-                    <h1 class="text-4xl sm:text-6xl md:text-7xl font-secondary mb-4">
+                    <h1 class="text-4xl sm:text-6xl md:text-7xl font-main mb-4">
                         HTML deserved better.
                     </h1>
-                    <p class="text-lg sm:text-xl font-main mb-8">
+                    <p class="text-lg sm:text-xl font-secondary mb-8">
                         Sklair is not a framework - it's a compiler that breathes life into HTML,<br>
                         making it practical, elegant, and expressive again.
                     </p>
@@ -72,8 +73,8 @@
 
     <section class="w-full bg-alternative text-black px-6 py-16 border-t border-gray-200">
         <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-secondary mb-6">An ideological revolt</h2>
-            <p class="text-base sm:text-lg font-main text-gray-700">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">An ideological revolt</h2>
+            <p class="text-base sm:text-lg font-secondary text-gray-700">
                 Sklair exists because we believe the web <em>partially</em> went wrong. <br>
                 We reject bloated runtimes, synthetic DOMs, and needless complexity.
                 <br class="hidden sm:inline">
@@ -84,8 +85,8 @@
 
     <section class="w-full bg-background text-black px-6 py-16 border-t border-gray-200">
         <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-secondary mb-6">Open-source.. soon!</h2>
-            <p class="text-base sm:text-lg font-main text-gray-700">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">Open-source.. soon!</h2>
+            <p class="text-base sm:text-lg font-secondary text-gray-700">
                 Sklair is currently a proprietary internal tool at <strong>Numelon</strong>. <br>
                 We plan to open-source it once it's even better, likely sometime in <strong>2026</strong>.
                 <br class="hidden sm:inline">
@@ -94,7 +95,7 @@
         </div>
     </section>
 
-    <Footer></Footer>
+    <CustomFooter></CustomFooter>
 </body>
 
 </html>
