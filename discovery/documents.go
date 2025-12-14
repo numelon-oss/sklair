@@ -18,6 +18,8 @@ var skipDirs = map[string]struct{}{
 	".idea":      {},
 	".env":       {}, // these are usually files for most people,
 	// but at Numelon these are folders and therefore must be excluded (for safety)
+	"node_modules": {},
+	"build":        {},
 }
 
 var skipFiles = map[string]struct{}{
@@ -25,6 +27,8 @@ var skipFiles = map[string]struct{}{
 	".env":        {},
 }
 
+// TODO: ensure that sklair.json is respected here
+// TODO: also ensure that sklair.json input, output, components and build paths are used here instead of predefined values (or in addition to predefined values)
 func DocumentDiscovery(root string) (*DocumentLists, error) {
 	lists := &DocumentLists{}
 

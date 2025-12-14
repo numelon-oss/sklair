@@ -188,5 +188,30 @@ func main() {
 		logger.Info("Saved to %s", outPath)
 	}
 
+	for _, filePath := range scanned.StaticFiles {
+		relPath, err := filepath.Rel(inputPath, filePath)
+		if err != nil {
+			logger.Error("Could not get relative path for %s : %s", filePath, err.Error())
+			return
+		}
+
+		outPath := filepath.Join(outputPath, relPath)
+		_ = os.MkdirAll(filepath.Dir(outPath), 0755)
+
+		data, err := os.ReadFile(filePath)
+		if err != nil {
+			logger.Error("Could not read static file %s : %s", filePath, err.Error())
+			return
+		}
+
+		err = os.WriteFile(outPath, data, 0644)
+		if err != nil {
+			logger.Error("Could not write static file %s : %s", filePath, err.Error())
+			return
+		}
+
+		logger.Info("Copied static file to %s", outPath)
+	}
+
 	logger.Info("Finished in %s", time.Since(start))
 }

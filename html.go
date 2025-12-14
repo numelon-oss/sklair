@@ -103,4 +103,5 @@ var htmlTags = map[string]bool{
 	"tt":         true,
 	"u":          true,
 	"var":        true,
+	"a":          true,
 }
