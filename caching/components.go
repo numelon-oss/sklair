@@ -3,6 +3,7 @@ package caching
 import (
 	"bytes"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sklair/htmlUtilities"
@@ -11,7 +12,7 @@ import (
 )
 
 type Component struct {
-	Node    *html.Node
+	Nodes   []*html.Node
 	Dynamic bool // whether the component contains any dynamic <lua> tags
 }
 
@@ -51,11 +52,15 @@ func Cache(source string, fileName string) (*Component, bool, error) {
 		return nil, false, errors.New("no body tag found in component")
 	}
 
+	var children []*html.Node
+	for child := bodyNode.FirstChild; child != nil; child = child.NextSibling {
+		children = append(children, child)
+	}
+
 	// TODO: make a new struct for components which includes a head section and a body section
 	// for head, perform deduplication when multiple components in same document share head stuff
 	// for body, just insert as usual
 
-	// TODO: in the future, cannot just do component.FirstChild because we will eventually want EVERYTHING from the body
-	// not just the first child
-	return &Component{bodyNode.FirstChild, hasLua}, hasLua, nil
+	fmt.Println(children)
+	return &Component{children, hasLua}, hasLua, nil
 }

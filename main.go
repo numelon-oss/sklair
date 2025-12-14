@@ -127,27 +127,32 @@ func main() {
 
 		logger.Info("Found %d tags to replace in %s", len(toReplace), filePath)
 
-		for _, node := range toReplace {
-			stcComponent, staticExists := componentCache.Static[node.Data]
-			dynComponent, dynamicExists := componentCache.Dynamic[node.Data]
+		for _, originalTag := range toReplace {
+			stcComponent, staticExists := componentCache.Static[originalTag.Data]
+			dynComponent, dynamicExists := componentCache.Dynamic[originalTag.Data]
+
+			fmt.Println(originalTag.Data)
 
 			if staticExists {
-				parent := node.Parent
+				parent := originalTag.Parent
 				if parent != nil {
-					for child := stcComponent.Node; child != nil; child = child.NextSibling {
-						parent.InsertBefore(htmlUtilities.Clone(child), node)
+					for _, child := range stcComponent.Nodes {
+						parent.InsertBefore(htmlUtilities.Clone(child), originalTag)
 					}
-					parent.RemoveChild(node)
+					//for child := stcComponent.Node; child != nil; child = child.NextSibling {
+					//	parent.InsertBefore(htmlUtilities.Clone(child), originalTag)
+					//}
+					parent.RemoveChild(originalTag)
 				}
 			} else if dynamicExists {
 				fmt.Println(dynComponent)
-				logger.Warning("Dynamic components are not implemented yet, skipping %s...", node.Data)
+				logger.Warning("Dynamic components are not implemented yet, skipping %s...", originalTag.Data)
 				continue
-			} else if node.Data == "lua" {
+			} else if originalTag.Data == "lua" {
 				logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
 				continue
 			} else {
-				logger.Info("Component %s not in cache, assuming JS tag and skipping...", node.Data)
+				logger.Info("Component %s not in cache, assuming JS tag and skipping...", originalTag.Data)
 				continue
 			}
 		}
