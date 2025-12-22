@@ -5,14 +5,12 @@ import (
 	"os"
 )
 
-type preventFOUC struct {
+type PreventFOUC struct {
 	Enabled bool   `json:"enabled,omitempty"`
 	Colour  string `json:"colour,omitempty"`
 }
 
 type ProjectConfig struct {
-	PreventFOUC preventFOUC `json:"preventFOUC,omitempty"`
-
 	Input      string   `json:"input,omitempty"`
 	Components string   `json:"components,omitempty"`
 	Exclude    []string `json:"exclude,omitempty"`
@@ -20,19 +18,27 @@ type ProjectConfig struct {
 	ExcludeCompile []string `json:"excludeCompile,omitempty"`
 	Output         string   `json:"output,omitempty"`
 
+	PreventFOUC *PreventFOUC `json:"PreventFOUC,omitempty"`
+
 	Minify    bool `json:"minify,omitempty"`
 	Obfuscate bool `json:"obfuscate,omitempty"`
 }
 
-var defaultConfig = ProjectConfig{
-	PreventFOUC: preventFOUC{
+var DefaultConfig = ProjectConfig{
+	Input:      "./",
+	Components: "./components",
+	Exclude:    []string{},
+
+	ExcludeCompile: []string{},
+	Output:         "./build",
+
+	PreventFOUC: &PreventFOUC{
 		Enabled: false,
+		Colour:  "#202020",
 	},
-	Input:  "./",
-	Output: "./build",
 
 	Minify:    false,
-	Obfuscate: false, // this pertains to JS obfuscation, not HTML.. you cant really ofuscate HTML per se
+	Obfuscate: false, // this pertains to JS obfuscation, not HTML.. you cant really obfuscate HTML per se
 	// TODO: likely rename "Obfuscate" to "ObfuscateJS" and make it another struct with more properties and customisation
 }
 
@@ -42,7 +48,7 @@ func Load(path string) (*ProjectConfig, error) {
 		return nil, err
 	}
 
-	config := defaultConfig
+	config := DefaultConfig
 	if err := json.Unmarshal(file, &config); err != nil {
 		return nil, err
 	}

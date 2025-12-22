@@ -16,7 +16,7 @@ var defaultAppConfig = AppConfig{
 //		return nil, err
 //	}
 //
-//	config := defaultConfig
+//	config := DefaultConfig
 //	if err := json.Unmarshal(file, &config); err != nil {
 //		return nil, err
 //	}

@@ -7,6 +7,9 @@ build
 src/build
 **.zip
 
+# files made during testing of sklair
+sklair.json
+
 # macOS Files
 **._*
 **.DS_*

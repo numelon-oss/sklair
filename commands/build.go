@@ -21,7 +21,7 @@ import (
 func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "build",
-		Description: "",
+		Description: "Builds a Sklair project",
 		Aliases:     []string{"b"},
 		Run: func(args []string) int {
 			//configPath := flag.String("config", "src/sklair.json", "Path to the sklair.json config file")
