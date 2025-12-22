@@ -19,6 +19,7 @@ func run() int {
 
 	global := flag.NewFlagSet("sklair", flag.ContinueOnError)
 
+	// TODO: add these verbosity flags to the main help command
 	silent := global.Bool("silent", false, "Suppress all output except errors")
 	verbose := global.Bool("verbose", false, "Enable verbose output")
 	debug := global.Bool("debug", false, "Enable debug output")
