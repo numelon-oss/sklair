@@ -44,32 +44,82 @@ func newMetaNode(name, property, content string) *html.Node {
 func OpenGraph(originalTag *html.Node) []*html.Node {
 	var out []*html.Node
 
+	var (
+		siteName    string
+		title       string
+		description string
+		image       string
+		url         string
+		ogType      = "website" // default
+		imageSize   = "large"   // default
+	)
+
 	for _, attr := range originalTag.Attr {
-		if attr.Key == "site_name" {
-			out = append(out, newMetaNode("", "og:site_name", attr.Val))
-		} else if attr.Key == "title" {
-			//out = append(out, newMetaNode("title", "", attr.Val)) // TODO: useless
-			out = append(out, newMetaNode("twitter:title", "", attr.Val))
-			out = append(out, newMetaNode("", "og:title", attr.Val))
-		} else if attr.Key == "description" {
-			out = append(out, newMetaNode("description", "", attr.Val))
-			out = append(out, newMetaNode("twitter:description", "", attr.Val))
-			out = append(out, newMetaNode("", "og:description", attr.Val))
-		} else if attr.Key == "image" {
-			out = append(out, newMetaNode("twitter:image", "", attr.Val))
-			out = append(out, newMetaNode("", "og:image", attr.Val))
-		} else if attr.Key == "url" {
-			out = append(out, newMetaNode("twitter:url", "", attr.Val))
-			out = append(out, newMetaNode("", "og:url", attr.Val))
-		} else if attr.Key == "type" {
-			out = append(out, newMetaNode("", "og:type", attr.Val))
-		} else if attr.Key == "image_size" {
-			val := "summary_large_image"
-			if attr.Val == "small" {
-				val = "summary"
-			}
-			out = append(out, newMetaNode("twitter:card", "", val))
+		switch attr.Key {
+		case "site_name":
+			siteName = attr.Val
+		case "title":
+			title = attr.Val
+		case "description":
+			description = attr.Val
+		case "image":
+			image = attr.Val
+		case "url":
+			url = attr.Val
+		case "type":
+			ogType = attr.Val
+		case "image_size":
+			imageSize = attr.Val
+			//if attr.Val == "small" {
+			//	imageSize = "small"
+			//}
 		}
+	}
+
+	if siteName != "" {
+		out = append(out, newMetaNode("", "og:site_name", siteName))
+	}
+
+	if title != "" {
+		out = append(out,
+			newMetaNode("twitter:title", "", title),
+			newMetaNode("", "og:title", title),
+		)
+	}
+
+	if description != "" {
+		out = append(out,
+			newMetaNode("description", "", description),
+			newMetaNode("twitter:description", "", description),
+			newMetaNode("", "og:description", description),
+		)
+	}
+
+	// TODO: always emit twitter card if image exists
+	if image != "" {
+		out = append(out,
+			newMetaNode("twitter:image", "", image),
+			newMetaNode("", "og:image", image),
+		)
+
+		card := "summary_large_image"
+		if imageSize == "small" {
+			card = "summary"
+		}
+		out = append(out, newMetaNode("twitter:card", "", card))
+	}
+
+	if url != "" {
+		out = append(out,
+			newMetaNode("twitter:url", "", url),
+			newMetaNode("", "og:url", url),
+		)
+	}
+
+	if ogType != "" {
+		out = append(out,
+			newMetaNode("", "og:type", ogType),
+		)
 	}
 
 	return out
