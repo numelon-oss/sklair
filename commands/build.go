@@ -32,7 +32,7 @@ func init() {
 			_config := "src/sklair.json"
 			configPath := &_config
 
-			config, err := sklairConfig.Load(*configPath)
+			config, err := sklairConfig.LoadProject(*configPath)
 			if err != nil {
 				logger.Error("Could not load sklair.json : %s", err.Error())
 				return 1
@@ -102,7 +102,7 @@ func init() {
 							_, dynamicExists := componentCache.Dynamic[tag]
 							_, staticExists := componentCache.Static[tag]
 
-							if !(dynamicExists || staticExists) && tag != "lua" {
+							if !(dynamicExists || staticExists) && (!(tag == "lua" || tag == "opengraph")) {
 								componentSrc, exists := components[tag]
 								if !exists {
 									logger.Warning("Non-standard tag found in HTML and no component present : %s, assuming JS tag", tag)
@@ -110,7 +110,7 @@ func init() {
 								}
 
 								logger.Info("Processing and caching tag %s...", tag)
-								cached, err := caching.Cache(componentsPath, componentSrc)
+								cached, err := caching.MakeCache(componentsPath, componentSrc)
 								if err != nil {
 									logger.Error("Could not cache component %s : %s", componentSrc, err.Error())
 									return 1
@@ -142,41 +142,56 @@ func init() {
 					stcComponent, staticExists := componentCache.Static[originalTag.Data]
 					dynComponent, dynamicExists := componentCache.Dynamic[originalTag.Data]
 
+					parent := originalTag.Parent
+					if parent == nil {
+						logger.Error("Somehow the parent does not exist for %s. (memory corruption???)")
+						return 1
+					}
+
 					//fmt.Println(originalTag.Data)
 
+					// TODO: the logic for static and dynnamic components will likely be very similar
+					// in the future, simply combine both branches,
+					// but for dynamic components just have a simple processing stage.
+					// after that its treated as a static component would be
 					if staticExists {
-						parent := originalTag.Parent
-						if parent != nil {
-							for _, child := range stcComponent.BodyNodes {
-								parent.InsertBefore(htmlUtilities.Clone(child), originalTag)
-							}
+						// TODO: this might be the issue
+						htmlUtilities.InsertNodesBefore(originalTag, stcComponent.BodyNodes)
 
-							if _, seen := seenComponents[originalTag.Data]; !seen && head != nil {
-								// deduplication of head nodes happens here!
-								for _, child := range stcComponent.HeadNodes {
-									key := htmlUtilities.WeakHashNode(child)
-									//fmt.Println(key)
-									if key == 0 {
-										continue
-									}
-
-									if _, seen := seenHead[key]; seen {
-										continue
-									}
-									seenHead[key] = struct{}{}
-									head.AppendChild(htmlUtilities.Clone(child))
+						if _, seen := seenComponents[originalTag.Data]; !seen && head != nil {
+							// deduplication of head nodes happens here!
+							// TODO: move deduplication to the final pass where we will optimise the head anyways
+							for _, child := range stcComponent.HeadNodes {
+								key := htmlUtilities.WeakHashNode(child)
+								//fmt.Println(key)
+								if key == 0 {
+									continue
 								}
+
+								if _, seen := seenHead[key]; seen {
+									continue
+								}
+								seenHead[key] = struct{}{}
+								head.AppendChild(htmlUtilities.Clone(child))
 							}
-							seenComponents[originalTag.Data] = struct{}{}
-							parent.RemoveChild(originalTag)
 						}
+						seenComponents[originalTag.Data] = struct{}{}
+						parent.RemoveChild(originalTag)
 					} else if dynamicExists {
 						fmt.Println(dynComponent)
 						logger.Warning("Dynamic components are not implemented yet, skipping %s...", originalTag.Data)
 						continue
 					} else if originalTag.Data == "lua" {
+						// TODO: prints from lua will be appended to a buffer
+						// then this buffer will be parsed by html
+						// then this will be inserted into document
 						logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
 						continue
+					} else if originalTag.Data == "opengraph" {
+						for _, child := range snippets.OpenGraph(originalTag) {
+							head.AppendChild(child)
+						}
+						parent.RemoveChild(originalTag)
 					} else {
 						logger.Warning("Component %s not in cache, assuming JS tag and skipping...", originalTag.Data)
 						continue

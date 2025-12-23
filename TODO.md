@@ -34,9 +34,8 @@
   - installation instructions on website very nice
 - make sklair actually more of a cli tool
   - think in terms of subcommands:
-    - `sklair init` -> creates a sklair.json file in the current directory and answer a questionnaire
     - `sklair build` -> builds the website based on sklair.json file or default values (if no sklair.json then warn about defaults available on docs)
-    - `sklair serve` -> starts a local dev server, watching for changes and auto rebuild also ensure that its not actually built EVERY time theres a change - also make a preview page available at like /_.sklairpreview which allows you to preview what components look like independently
+    - `sklair serve` -> starts a local dev server, watching for changes and auto rebuild also ensure that its not actually built EVERY time theres a change (debounced) - also make a preview page available at like /_.sklairpreview which allows you to preview what components look like independently
     - `sklair clean` -> removes all build artifacts (build dir, static dir)
     - `sklair update` -> updates sklair to the latest version (ALSO: ensure that on every run of sklair, it notifies the user of a new version unless auto update check is disabled in sklair config)
   - then only finally print a new empty line and then print build time stats etc (summary)
@@ -47,6 +46,14 @@
 - allow components to be entire folders with index.html inside, and other files.
   - usage of a file from the component folder, e.g. the component index.html references the local style.css inside the component folder will be detected byy sklair and then will be rewritten once compiled so that all paths are not broken
   - at that rate, after compiling create a _sklair directory in the build folder where all component files live in and in the final html, component dependencies are referenced from there
+    - for example lets say that in component.html you reference ./someStyle.css as a stylesheet. regularly just by current component logic, someStyle.css wont be found because it is inside the components folder which doesnt get copied on build, and, either way even if it was copied then the reference would still be wrong because we use ./component.css in index.html but the actual file is in ./components/component.css. therefore sklair must be aware of this
+
+
+- allow parsing comments inside of components which allows you to tell sklair to PRESERVE the order of nodes inside head
+  - this is INCREDIBLY useful for analytics snippets, since we dont want the final head optimisation pass to mess up the order when it matters
+  - so basically some head nodes become grouped per se
+
+
 
 ## more todo (a bit long-term?)
 
@@ -56,16 +63,22 @@ build optimisations:
 
 - automatic resource discovery (eg external scripts, fonts, images) across documents and components (detect in final output)
 - preconnect and dns-prefetch insertion (automatically after scanning source documents and components) - based on discovered external domains (eg fonts.googleapis.com), automatically insert optimised `<link rel="preconnect">` and `<link rel="dns-prefetch">` tags near the TOP of head
+  - preconnect and dns prefetch must be inserted in the order that their respective domains are in the actual document. always head preconnect and dns prefetch first. but then after all that, if there is an image first at top of body from somecdn.com, then somecdn.com should be first preconnect and dns prefetch
 - heuristic based ordering of head tags for ideal performance
-    1. preconnect/dns prefetch should be first
-    2. stylesheets and scripts logically grouped
-    3. meta and charset tags next
-    4. analytics inserted last (will be very hard to actually define what analytics is - so simply detect from component name such as "analytics" or "tracking" or "google" etc)
+    1. charset
+    2. preventFOUC
+    3. preconnect/dns prefetch
+    4. viewport
+    5. stylesheets and scripts logically grouped
+    6. analytics inserted last (will be very hard to actually define what analytics is - so simply detect from component name such as "analytics" or "tracking" or "google" etc)\
+    7. meta tags etc (eg opengraph) - these literally have zero purpose when youre actually VIEWING a webpage, therefore should be parsed (streamed) last by browsers
 
 - consider providing a final feedback summary at the end of compilation:
   - basically use all of the knowledge in web development thus far and try to provide it through sklair lol
   - "! consider self-hosting these common external dependencies to improve performance and reduce dns lookups" - sklair recommendation upon detecting common script tags or stylesheets etc (eg fontawesome from cloudflare cdnjs, fonts from google)
 
-# documentation pages
+## documentation pages
+
+- how does sklair work? (maintainability doc)
 - how to use sklair in github workflows (how to deploy to github pages)
 - how to make a sklair website

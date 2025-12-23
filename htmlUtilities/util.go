@@ -42,6 +42,12 @@ func FindTag(n *html.Node, tag string) *html.Node {
 	return nil
 }
 
+func InsertNodesBefore(insertBefore *html.Node, tags []*html.Node) {
+	for _, tag := range tags {
+		insertBefore.Parent.InsertBefore(Clone(tag), insertBefore)
+	}
+}
+
 func GetAllChildren(n *html.Node) []*html.Node {
 	var children []*html.Node
 	for child := n.FirstChild; child != nil; child = child.NextSibling {
@@ -60,9 +66,6 @@ func superweakHash(s string) uint64 {
 	return h.Sum64()
 }
 
-// TODO: use this potentially instead of node rendering for FAST(er?) deduplication
-// however this comes with some compromises
-// but I suppose its fine?
 func WeakHashNode(n *html.Node) uint64 {
 	if n == nil {
 		return 0

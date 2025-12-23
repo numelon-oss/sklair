@@ -21,7 +21,7 @@ type ComponentCache struct {
 	Dynamic map[string]*Component
 }
 
-func Cache(source string, fileName string) (*Component, error) {
+func MakeCache(source string, fileName string) (*Component, error) {
 	path := filepath.Join(source, fileName)
 
 	//if _, err := os.Stat(path); err != nil {

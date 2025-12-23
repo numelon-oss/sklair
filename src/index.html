@@ -3,28 +3,8 @@
 
 <head>
     <meta charset="UTF-8" />
+    <!-- TODO: the preventFOUC SHOULD BE AFTER THE CHARSET!!! -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <!-- TODO: turn this SEO stuff into an <OpenGraph> component later -->
-    <meta name="title" content="Sklair | HTML deserved better.">
-    <meta property="og:title" content="Sklair | HTML deserved better.">
-    <meta name="twitter:title" content="Sklair | HTML deserved better.">
-
-    <meta name="description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
-    <meta property="og:description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
-    <meta name="twitter:description"
-        content="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks.">
-
-    <meta property="og:image" content="https://sklair.numelon.com/img/opengraph.jpg">
-    <meta name="twitter:image" content="https://sklair.numelon.com/img/opengraph.jpg">
-
-    <meta property="og:type" content="website">
-    <meta name="twitter:card" content="summary_large_image">
-
-    <meta property="og:url" content="https://sklair.numelon.com">
-    <meta name="twitter:url" content="https://sklair.numelon.com">
 
     <title>Sklair | HTML deserved better.</title>
 </head>
@@ -33,6 +13,10 @@
     <!-- THESE ARE MOSTLY HEAD COMPONENTS! -->
     <CommonHead></CommonHead>
     <Analytics></Analytics>
+    <OpenGraph site_name="Sklair" title="Sklair | HTML deserved better."
+        description="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks."
+        image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com" type="website"
+        image_size="large"></OpenGraph>
     <!-- --------------------------------- -->
 
     <MenuBar></MenuBar>

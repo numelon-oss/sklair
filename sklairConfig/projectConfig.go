@@ -42,7 +42,7 @@ var DefaultConfig = ProjectConfig{
 	// TODO: likely rename "Obfuscate" to "ObfuscateJS" and make it another struct with more properties and customisation
 }
 
-func Load(path string) (*ProjectConfig, error) {
+func LoadProject(path string) (*ProjectConfig, error) {
 	file, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err

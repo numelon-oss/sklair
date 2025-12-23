@@ -10,7 +10,7 @@ var defaultAppConfig = AppConfig{
 	AutoUpdate: true,
 }
 
-//func Load(path string) (*ProjectConfig, error) {
+//func LoadProject(path string) (*ProjectConfig, error) {
 //	file, err := os.ReadFile(path)
 //	if err != nil {
 //		return nil, err
