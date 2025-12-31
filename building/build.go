@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sklair/building/priorities"
 	"sklair/caching"
+	"sklair/devserver"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
 	"sklair/logger"
@@ -213,6 +214,17 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			IsOrderingBarrier: false,
 		})
 
+		if outputDirOverride != "" {
+			// sklair dev server refresh with websocket
+			segmentedHead = append(segmentedHead, &HeadSegment{
+				Nodes: []*html.Node{
+					htmlUtilities.Clone(devserver.WSScriptNode),
+				},
+				TreatAsTag:        priorities.Script,
+				IsOrderingBarrier: false,
+			})
+		}
+
 		segmentedHead = OptimiseHead(segmentedHead)
 
 		// put the segmented head back into the document head
@@ -249,6 +261,19 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 
 	processingEnd := time.Since(start)
+
+	if outputDirOverride != "" {
+		err = os.MkdirAll(filepath.Join(outputDir, "_sklair"), 0755)
+		if err != nil {
+			return fmt.Errorf("could not create sklair dev server directory : %s", err.Error())
+		}
+
+		err := os.WriteFile(filepath.Join(outputDir, devserver.WSDevScriptPath), []byte(devserver.WSDevScript), 0644)
+		if err != nil {
+			return fmt.Errorf("could not write sklair dev server websocket js file : %s", err.Error())
+		}
+	}
+
 	//logger.EmptyLine()
 	logger.Info("Copying static files...")
 

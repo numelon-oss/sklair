@@ -10,7 +10,7 @@ import (
 )
 
 //go:embed preventFOUC.html
-var pfouc_src string
+var pfoucSrc string
 
 // TODO: when building concurrency is added to sklair, then make GetFOUCNodes cache the result
 // then use sync.Once
@@ -23,7 +23,7 @@ var pfouc_src string
 // )
 
 func GetFOUCNodes(bgColour string) (*html.Node, *html.Node, error) {
-	doc, err := html.Parse(strings.NewReader(pfouc_src))
+	doc, err := html.Parse(strings.NewReader(pfoucSrc))
 	if err != nil {
 		return nil, nil, err
 	}

@@ -1,14 +1,14 @@
 package commands
 
 import (
-	"fmt"
-	"net/http"
 	"os"
 	"sklair/building"
 	"sklair/commandRegistry"
 	"sklair/devserver"
 	"sklair/logger"
 	"sklair/sklairConfig"
+	"strconv"
+	"strings"
 )
 
 // REBUILDING ONLY CHANGES FILES:
@@ -24,6 +24,12 @@ import (
 // therefore ONLY process (build) changed HtmlFiles, not StaticFiles
 // but this still requires a bit of work but its much easier than the former
 
+// TODO: add the following flags
+// port (default is 8080 upwards)
+// host (default is 127.0.0.1)
+// --open (opens browser)
+// --auto_refresh=true|false (websocket control, default true)
+// --watch=true|false (watch for changes, default true)
 func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "serve",
@@ -43,23 +49,24 @@ func init() {
 			}
 			defer os.RemoveAll(tmp)
 
-			fmt.Println(tmp)
+			listener, port, err := devserver.AcquirePort("localhost", 0)
+			if err != nil {
+				logger.Error("could not acquire port : %s", err.Error())
+				return 1
+			}
+			defer listener.Close()
 
-			// TODO: move this to devserver/server.go
-			// so it just becomes go devserver.ServeStatic(tmp)
-			go func() {
-				fs := http.FileServer(http.Dir(tmp))
+			addr := "localhost:" + strconv.Itoa(port)
+			devserver.WSDevScript = strings.ReplaceAll(devserver.WSDevScript, "WEBSOCKET_PATH", devserver.WSPath)
+			devserver.WSDevScript = strings.ReplaceAll(devserver.WSDevScript, "WEBSOCKET", addr)
 
-				handler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-					w.Header().Set("cache-control", "no-cache, no-store, must-revalidate")
-					fs.ServeHTTP(w, r)
-				})
+			wsThing := devserver.NewWS()
 
-				logger.Info("Will be listening on http://localhost:8080/")
-				if err := http.ListenAndServe(":8080", handler); err != nil {
-					logger.Error(err.Error())
-				}
-			}()
+			// TODO: we need to be able to check whether the server started successfully in the first place or not
+			// otherwise we are just walking in blind here
+			// and dont know whether the file server is running or not
+			// whilst still tracking the filesystem and recompiling every time...
+			go devserver.Serve(listener, tmp, port, wsThing)
 
 			err = building.Build(config, configDir, tmp)
 			if err != nil {
@@ -94,6 +101,8 @@ func init() {
 						logger.Error(err.Error())
 						return 1
 					}
+
+					wsThing.Send <- "reload"
 				case err := <-errs:
 					logger.Error(err.Error())
 				}

@@ -58,7 +58,7 @@
 - in the future, all errors and warnings will have a link to the sklair documentation for more information
 
 
-
+- when compiling 404.html/.shtml files, warn about relative links breaking (eg when a user visits /a/b/c/notfound instead of /notfound) - so always anchor to root OR give full paths to assets
 
 
 

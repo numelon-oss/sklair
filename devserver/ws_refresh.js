@@ -1,0 +1,1 @@
+new WebSocket("ws://WEBSOCKET/WEBSOCKET_PATH").onmessage = (e) => {if (e.data === "reload") location.reload();}
