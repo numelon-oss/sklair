@@ -1,88 +1,53 @@
-# Sklair
+<p align="center">
+  <img src="https://sklair.numelon.com/branding/icon-colour.svg" width="120" />
+</p>
 
-Sklair is a HTML compiler and templating engine which makes building sites with HTML, CSS, and JavaScript both elegant and powerful again, through reducing repetition for large sites.
+<h1 align="center">Sklair</h1>
 
-## The Sklair Philosophy
+<p align="center">
+  <i>HTML deserved better.</i>
+</p>
 
-Using this compiler requires some context as to why it was made in teh first place.
+---
 
-Sklair is essentially a protest against modern frontend excess.
+# What is sklair?
 
-Sklair parses HTML - not JSX -
-and it is not a full framework and doesn't inject a bunch of JavaScript to create virtual DOM trees.
-It injects logic **only where needed** through (future) compiler directives and embedded Lua,
-uses plain `.html` files as component boundaries,
-has zero runtime dependencies (no hydration, no runtime VDOM, no `bundle.js`),
-and actually treats the web as a markup-first platform, not a JavaScript rendering target.
+**Sklair is a HTML compiler.**
 
-Therefore, Sklair is not just a tooling choice, but rather an ideological revolt against complex build steps,
-800 kB "starter kits", component trees that only exist in memory, and, JS controlling the entire DOM lifecycle.
-Instead, it says: "What if your website was literally just a folder of HTML,
-CSS and JS, but with just enough compiler help to stay dry, clean, and powerful?"
-It is a return to native HTML as the primary language,
-CSS *actually* doing layour instead of being second-class
-(although we at Numelon prefer to use Tailwind CSS, ironically),
-and JavaScript added for interactivity, not absolutely everything.
+It takes real HTML files, reusable components, a few compiler directives and pre/post-build hooks written in Lua, and produces better HTML than a human could realistically maintain by hand.
 
-In summary, Sklair is basically old-school but modernised static site generation.
+You will find, whilst reading this README, that there is a strong bias against things like hydration, virtual DOMs, bundles, or client-side rendering pipelines. That is because Sklair gives you just HTML, CSS, and JavaScript - exactly how the web was meant to work.
 
-## Real use cases
+## What Sklair gives you
 
-In all truth, Sklair targets quite a niche audience.
-But let's theoretically say that you are a developer (or developers)
-who absolutely despises every single framework and refuses to use the likes of React,
-NextJS, et cetera.
-You like using regular HTML and actual CSS (or TailwindCSS)
-to make your sites not look like garbage from the 1990s. And on top of that,
-the only JavaScript in your site *is* actually functional and serves a purpose
-(i.e. to make a button do work, add animations, etc.) -
-to the point where it is genuinely a single page app.
+- **HTML components**
+- **Head deduplication with a [heuristic head ordering pass](#compiled-output-example-2)**
+- Social metadata generation (OpenGraph, Twitter)
+- **Automatic resource hinting (preconnect, dns-prefetch, etc.)**
+- **Compiler directives for advanced control**
+- A live development server (`sklair serve`)
+- Utilities to **prevent FOUC** (Flash Of Unstyled Content)
+- Zero runtime JavaScript overhead, because this isnt a framework
 
-In this case, you will have a single `.html` file that is ***absolutely huge*** and almost innavigable,
-and whilst you hate frameworks,
-you must admire the utility of being able to write `<CustomComponent />` in common frameworks,
-and it saves you some time and provides you with consistency,
-the ability to update the same exact component across many pages where you use it.
+All while outputting plain, static HTML.
 
-Another use case is that you simply maintain an absolutely large corporate website where you need site consistency and really cannot afford to spend time copying and pasting a new link into the menu section of a site where that same menu bar is repeated across 1000 files.
-
-Sklair is for you.
-
-## How does it work?
-
-1. Sklair performs document discovery by recursively finding HTML and static files in your project.
-2. The `components` directory of your specified source is then scanned, with each file (hereunto referred to as a "component") being parsed - this is component discovery.
-3. On-demand caching is performed: if a component is static (i.e. there are no Lua directives in it), then it is parsed and cached immediately. Otherwise, if dynamic, its Lua blocks are kept for runtime processing per individual HTML file.
-4. For each file, non-standard HTML tags are replaced with matching components. Output is written to a mirrored `build` directory structure.
-5. Non-HTML assets are copied as-is into `build`.
-
-## Performance considerations
-
-Somewhat decent performance considerations have been put into Sklair.
-I initially thought of doing component discovery and file discovery sequentially,
-but then I realised that we would be scanning a bunch of files multiple times and parsing their contents even if we didn't need some components.
-Therefore, there is lazy loading and whatnot.
-Below describes it in better detail:
-
-- Lazy component caching means components are parsed only when they are actually used in your source HTML files
-- Static versus dynamic resolution is performed, where Lua components are handled separately for performance
-- Once parsed, component trees are reused so that there is no repeated parsing
-- There is no lookup cost for routing or output structuring
-
-## Example
+### Example 1 - Simple
 
 > [!NOTE]  
 > Component names are case-insensitive. You may choose to name a component `SomeHeader` for clarity, but Sklair treats both `someheader` and `SomeHeader` as the same.
-> 
+>
 > Likewise, component files are case-insensitive.
-> 
+>
 > You may choose to write `SomeHeader` in your HTML, and have your component saved as `someheader.html`, and it will still work.
+
+#### Source (Example 1)
 
 ```html
 <!-- src/index.html -->
 <body>
-    <SomeHeader></SomeHeader>
-    <Content></Content>
+  <SomeHeader></SomeHeader>
+
+  <Content></Content>
 </body>
 ```
 
@@ -93,14 +58,191 @@ Below describes it in better detail:
 </header>
 ```
 
-### Compiled output
+```html
+<!-- components/Content.html -->
+<p>...</p>
+```
+
+#### Compiled output (Example 1)
 
 ```html
 <body>
   <header>
     <h1>Welcome to my site</h1>
   </header>
-  
+
   <p>...</p>
 </body>
 ```
+
+### Example 2 - Components with head + body insertion
+
+#### Source (Example 2)
+
+```html
+<!-- src/index.html -->
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Hello world</title>
+</head>
+
+<body>
+    <CommonHead></CommonHead>
+
+    <Content></Content>
+</body>
+
+</html>
+```
+
+```html
+<!-- components/CommonHead.html -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+        <script src="/assets/js/ThemeSync.js" defer></script>
+        
+        <!-- sklair:ordering-barrier treat-as=script -->
+        <script src="https://cdn.tailwindcss.com"></script>
+        <script src="/assets/styles/tailwind.config.js"></script>
+        <link rel="stylesheet" href="/assets/styles/global.css">
+        <link rel="stylesheet" href="/assets/styles/themes.css">
+        <!-- sklair:ordering-barrier-end -->
+        
+        <link rel="preconnect" href="https://wcdn.numelon.com">
+        <meta charset="UTF-8">
+        <meta name="theme-color" content="#ff4e4e">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    </head>
+
+    <body>
+    </body>
+</html>
+```
+
+```html
+<!-- components/Content.html -->
+<p>...</p>
+```
+
+#### Compiled output (Example 2)
+
+As can be seen below, although the `<head>` of the `CommonHead` component was unordered above and semantically chaotic, the compiled output is deterministically reordered according to browser loading semantics.
+
+**This is not cosmetic**, albeit thats a plus. Modern browsers stream-parse HTML as the bytes for it arrive, and many `<head>` elements (such as `meta charset`, preconnects, stylesheets and scripts) trigger side-effects the moment they are encountered. Their relative position therefore directly affects request scheduling, render-blocking, and even URL resolution.
+
+Sklair applies a heuristic head-ordering pass to ensure that these high impact nodes are discovered *as early as possible*, improving page load behaviour without requiring authors to manually micro-manage this order themselves.
+
+Additionally, the use of the `sklair:ordering-barrier` compiler directive has allowed us to preserve the order of HTML elements where it may be important, thus preventing the break of some things during the re-ordering pass. For example, the most common use case we have encountered is ensuring that Tailwind configurations load after the tailwindcss script itself.
+
+```html
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8" />
+
+    <meta name="theme-color" content="#ff4e4e" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <link rel="preconnect" href="https://wcdn.numelon.com" />
+
+    <title>Hello world</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap"
+        rel="stylesheet" />
+    <script src="/assets/js/ThemeSync.js" defer=""></script>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="/assets/styles/tailwind.config.js"></script>
+    <link rel="stylesheet" href="/assets/styles/global.css" />
+    <link rel="stylesheet" href="/assets/styles/themes.css" />
+
+    <meta name="generator" content="https://sklair.numelon.com" />
+</head>
+
+<body>
+    <p>...</p>
+</body>
+
+</html>
+```
+
+## How does it work?
+
+1. Pre-build Lua hooks run, if declared in `sklair.json`
+2. Sklair scans your project for HTML and static assets
+3. It discovers all components in your components directory
+4. Components are parsed lazily only when needed
+5. Non-standard tags are replaced with components
+6. `<head>` is analysed, deduplicated, and heuristically "optimised"
+7. Everything is written into a mirrored build directory, where static files are copied verbatim
+8. Post-build Lua hooks run, if declared in `sklair.json`
+
+## Performance
+
+### The tool itself
+
+- Components are parsed once and cached
+- Static components are reused across files
+- Dynamic components are evaluated only when needed
+
+Apart from these, there are a few other optimisations which makes Sklair have very small compile times, even for big projects with many components and many usages.
+
+### Compiled output in browsers
+
+This is where the ideological part comes in. SKlair is fast because it does almost nothing at runtime - because there *is* no runtime.
+
+This isn't a framework, there is no routing, no hydration, or rendering pipeline. **Your site loads at native browser speed**.
+
+## Who is this for?
+
+Sklair was originally written as a proprietary tool for use within Numelon, so we have a genuine use for this tool, but in general Sklair is for people who:
+
+- maybe hate the entire premise of React
+- want to build light SPAs using HTML + JS instead of virtual DOMs (and yes, its possible to make SPAs with Sklair)
+- want **reusable components** without rewriting the web in some nasty framework
+- maintain large websites and are tired of copy-pasting headers, navigation bars, and footers across hundreds of files
+
+## The philosophy behind Sklair
+
+Modern frontend development has gone completely off the rails. We seem to have 800KB "starter kits", virtual DOM trees that only exist in memory, JavaScript that controls the entire lifecycle of the page (yuck!), and build pipelines that are more complex than most backends and take up more time than the universe has existed to compile.
+
+All of that.. just to render HTML.
+
+The overarching theme here is pretty understandable so far, Sklair is almost a protest against all of this. It asks a simple question:
+
+> What if your website was literally just a folder of HTML, CSS, and JavaScript - but with just enough compiler help to stay clean, consistent and powerful?
+
+THerefore, Sklair:
+
+- parses **real HTML**, not JSX
+- Treats HTML as the UI
+- Treats CSS as the layout engine
+- Treats JavaScript as **behaviour, not rendering**
+- Adds logic only where it is actually needed.
+
+No runtime, VDOM, or component tree in memory (unless of course you decide to implement all of that yourself, from scratch, in JS). Just documents.
+
+## You're so against React? Frameworks? Whats wrong with you? No one is going to use this!! This is just a static site builder!! You will get a grandma website from the 1990 with raw HTML! How do I make SPAs?
+
+Thanks. Just because you're not using a framework, doesnt mean that suddenly every nice feature or good design cannot be made. After all, its the same browser being used. You just implement a few things yourself.
+
+You are free to build **full SPAs** using:
+
+- modules (overpowered!)
+- fetch
+- DOM APIs
+- Animations
+- WebSockets
+- etc
+
+Just without lying to the browser about what a document is.
+
+In fact, Sklair (and the core philosophy) has been used to make full SPAs already, notably Numelon Passport.
+
+<!-- TODO: add that other new project to this list? should it be public? -->
