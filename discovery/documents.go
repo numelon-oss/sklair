@@ -15,6 +15,7 @@ type DocumentLists struct {
 
 var defaultExcludes = []string{
 	"sklair.json",
+	".sklair/",
 	".git/",
 	".vscode/",
 	".idea/",

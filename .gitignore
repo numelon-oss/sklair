@@ -1,8 +1,6 @@
 # Temporaru
-out.html
-src/output.html
-sklair.log
 sklair.json
+.sklair
 
 # built items
 build

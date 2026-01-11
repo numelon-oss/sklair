@@ -2,12 +2,12 @@ package luaSandbox
 
 import lua "github.com/yuin/gopher-lua"
 
-type luaLib struct {
+type defaultLuaLib struct {
 	libName string
 	libFunc lua.LGFunction
 }
 
-var luaLibs = []luaLib{
+var luaLibs = []defaultLuaLib{
 	//{"package", lua.OpenPackage},
 	{"", lua.OpenBase},
 	{"table", lua.OpenTable},
@@ -51,7 +51,7 @@ var remove = map[string][]string{
 	"os": {"execute", "exit", "getenv", "remove", "rename", "setenv" /*"setlocale",*/, "tmpname"},
 }
 
-func OpenSandboxedDefault(ls *lua.LState, opts SandboxOptions) {
+func OpenSandboxedDefault(ls *lua.LState, opts *SandboxOptions) {
 	for _, lib := range luaLibs {
 		ls.Push(ls.NewFunction(lib.libFunc))
 		ls.Push(lua.LString(lib.libName))
@@ -72,6 +72,7 @@ func OpenSandboxedDefault(ls *lua.LState, opts SandboxOptions) {
 			if libName == "os" && funcName == "exit" {
 				tbl.RawSetString(funcName, ls.NewFunction(func(L *lua.LState) int {
 					code := L.OptInt(1, 0)
+					L.Close() // TODO: should the close be inside the place where the new sandbox was opened? ie just close on channel receive instead?
 					opts.ExitChannel <- code
 					return 0
 				}))

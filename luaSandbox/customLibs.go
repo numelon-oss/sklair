@@ -5,14 +5,25 @@ import (
 	json "layeh.com/gopher-json"
 )
 
-var customLibs = []luaLib{
-	{"fs", openFs},
-	{"json", json.Loader},
+type LFuncWithSandboxContext func(opts *SandboxOptions) lua.LGFunction
+
+type customLuaLib struct {
+	libName    string
+	libFactory LFuncWithSandboxContext
 }
 
-func OpenSandboxedCustom(ls *lua.LState, opts SandboxOptions) {
+var customLibs = []customLuaLib{
+	{"fs", openFs},
+	{"json", func(_ *SandboxOptions) lua.LGFunction {
+		return json.Loader
+	}},
+}
+
+func OpenSandboxedCustom(ls *lua.LState, opts *SandboxOptions) {
 	for _, lib := range customLibs {
-		ls.Push(ls.NewFunction(lib.libFunc))
+		loader := lib.libFactory(opts)
+
+		ls.Push(ls.NewFunction(loader))
 		ls.Push(lua.LString(lib.libName))
 		ls.Call(1, 0)
 	}

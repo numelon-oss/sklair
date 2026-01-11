@@ -5,9 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sklair/commandRegistry"
-	"sklair/logger"
-
 	_ "sklair/commands"
+	"sklair/logger"
 )
 
 func main() {
@@ -15,6 +14,27 @@ func main() {
 }
 
 func run() int {
+	//L := luaSandbox.NewSandbox(luaSandbox.SandboxOptions{
+	//	ExitChannel: make(chan int),
+	//	FSContext: luaSandbox.FSContext{
+	//		CacheDir:     ".sklair/cache",
+	//		ProjectDir:   "./",
+	//		TempDir:      ".sklair/tmp",
+	//		GeneratedDir: ".sklair/generated",
+	//		BuildDir:     "build",
+	//		Mode:         luaSandbox.HookModePost,
+	//	},
+	//})
+	//defer L.Close()
+	//
+	//err := L.DoString(`print(fs.write("built:haha.txt", "hi world"))`)
+	//if err != nil {
+	//	fmt.Println(err)
+	//	return 0
+	//}
+	//
+	//return 0
+
 	reg := *commandRegistry.Registry
 
 	global := flag.NewFlagSet("sklair", flag.ContinueOnError)
