@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"os"
 	"sklair/commandRegistry"
-	_ "sklair/commands"
+	_ "sklair/commandRegistry/commands"
 	"sklair/logger"
 )
 
