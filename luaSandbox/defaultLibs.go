@@ -72,7 +72,6 @@ func OpenSandboxedDefault(ls *lua.LState, opts *SandboxOptions) {
 			if libName == "os" && funcName == "exit" {
 				tbl.RawSetString(funcName, ls.NewFunction(func(L *lua.LState) int {
 					code := L.OptInt(1, 0)
-					L.Close() // TODO: should the close be inside the place where the new sandbox was opened? ie just close on channel receive instead?
 					opts.ExitChannel <- code
 					return 0
 				}))

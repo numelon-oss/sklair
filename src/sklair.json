@@ -1,15 +1,18 @@
 {
+	"hooks": "./hooks",
+
 	"input": "./",
 	"components": "./components",
-	"exclude": [".*", "!.htaccess", "*.md", "*.psd"],
 
+	"exclude": [".*", "!.htaccess", "*.md", "*.psd"],
 	"exclude_compile": ["someBigFile.html"],
+
 	"output": "./build",
 
 	"minify": true,
 	"obfuscateJS": {
-      "enabled": true
-    },
+		"enabled": true
+	},
 
 	"preventFOUC": {
 		"enabled": true,

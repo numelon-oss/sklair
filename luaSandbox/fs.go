@@ -21,7 +21,7 @@ type FSContext struct {
 	ProjectDir   string
 	TempDir      string
 	GeneratedDir string
-	BuildDir     string
+	BuiltDir     string
 	Mode         HookMode
 }
 
@@ -70,20 +70,17 @@ func resolvePath(ctx *FSContext, path string, mode AccessMode) (string, error) {
 		}
 		return filepath.Join(ctx.ProjectDir, strings.TrimPrefix(path, "project:")), nil
 
-	case strings.HasPrefix(path, "temporary:"):
-		return filepath.Join(ctx.TempDir, strings.TrimPrefix(path, "temporary:")), nil
+	case strings.HasPrefix(path, "temp:"):
+		return filepath.Join(ctx.TempDir, strings.TrimPrefix(path, "temp:")), nil
 
 	case strings.HasPrefix(path, "generated:"):
-		if ctx.Mode == HookModePost && mode == AccessModeWrite {
-			return "", errors.New("generated files are read-only in post-build hooks")
-		}
 		return filepath.Join(ctx.GeneratedDir, strings.TrimPrefix(path, "generated:")), nil
 
 	case strings.HasPrefix(path, "built:"):
 		if ctx.Mode != HookModePost {
 			return "", errors.New("built files are only available in post-build hooks")
 		}
-		return filepath.Join(ctx.BuildDir, strings.TrimPrefix(path, "built:")), nil
+		return filepath.Join(ctx.BuiltDir, strings.TrimPrefix(path, "built:")), nil
 	}
 
 	return "", errors.New("path must start with `cache`, `project`, `temporary`, `generated`, or `built`, followed by a colon and a relative path")
@@ -150,6 +147,6 @@ func writeFile(ctx *FSContext) lua.LGFunction {
 
 // cache:file.txt -> .sklair/cache/file.txt
 // project:file.txt (only this one allows READONLY access to one level above the project directory, using project:../file.txt)
-// temporary:file.txt -> .sklair/tmp/file.txt
+// temporary:file.txt -> .sklair/temp/file.txt
 // generated:file.txt -> .sklair/generated/file.txt -> build -> build/_sklair/generated/file.txt
 // built:file.txt -> build/file.txt

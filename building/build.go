@@ -6,14 +6,17 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sklair/building/hooks"
 	"sklair/building/priorities"
 	"sklair/caching"
 	"sklair/devserver"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
 	"sklair/logger"
+	"sklair/luaSandbox"
 	"sklair/sklairConfig"
 	"sklair/snippets"
+	"sklair/util"
 	"strings"
 	"time"
 
@@ -21,23 +24,51 @@ import (
 )
 
 func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverride string) error {
+	start := time.Now()
+	
 	inputDir := filepath.Join(configDir, config.Input)
 	componentsDir := filepath.Join(configDir, config.Components)
+	hooksDir := filepath.Join(configDir, config.Hooks)
 
 	outputDir := outputDirOverride
 	if outputDirOverride == "" {
 		outputDir = filepath.Join(configDir, config.Output)
 	}
 
-	err := os.RemoveAll(outputDir)
+	sklairDir := filepath.Join(configDir, ".sklair")
+	cacheDir := filepath.Join(sklairDir, "cache")
+	tempDir := filepath.Join(sklairDir, "temp")
+	generatedDir := filepath.Join(sklairDir, "generated")
+
+	componentsRel, err := filepath.Rel(inputDir, componentsDir)
+	hooksRel, err := filepath.Rel(inputDir, hooksDir)
+	if err != nil {
+		return errors.New("could not get relative path for components or hooks : " + err.Error())
+	}
+	excludes := append(config.Exclude, componentsRel, hooksRel)
+
+	if outputDirOverride == "" {
+		outputRel, err := filepath.Rel(inputDir, outputDir)
+		if err != nil {
+			return errors.New("could not get relative path for output : " + err.Error())
+		}
+		excludes = append(excludes, outputRel)
+	}
+
+	err = os.RemoveAll(outputDir)
 	if err != nil {
 		return fmt.Errorf("could not remove output directory %s : %s", outputDir, err.Error())
 	}
-
-	start := time.Now()
+	err = os.RemoveAll(tempDir)
+	if err != nil {
+		return fmt.Errorf("could not remove Sklair's temp directory %s : %s", outputDir, err.Error())
+	}
+	err = os.RemoveAll(generatedDir)
+	if err != nil {
+		return fmt.Errorf("could not remove Sklair's generated directory %s : %s", outputDir, err.Error())
+	}
 
 	logger.Info("Indexing documents...")
-	excludes := append(config.Exclude, config.Components, config.Output)
 	scanned, err := discovery.DiscoverDocuments(inputDir, excludes)
 	if err != nil {
 		return errors.New("could not scan documents : " + err.Error())
@@ -48,6 +79,31 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	if err != nil {
 		return errors.New("could not scan components : " + err.Error())
 	}
+
+	hasHooks := config.Hooks != ""
+	var allHooks *discovery.Hookset
+	preHookStart := time.Now()
+	if hasHooks {
+		logger.Info("Indexing hooks...")
+		allHooks, err = discovery.DiscoverHooks(hooksDir)
+		if err != nil {
+			return errors.New("could not scan hooks : " + err.Error())
+		}
+
+		logger.Info("Running pre-build hooks...")
+		err = hooks.RunHooks(hooksDir, allHooks.PreBuild, &luaSandbox.FSContext{
+			CacheDir:     cacheDir,
+			ProjectDir:   inputDir,
+			TempDir:      tempDir,
+			GeneratedDir: generatedDir,
+			BuiltDir:     outputDir,
+			Mode:         luaSandbox.HookModePre,
+		})
+		if err != nil {
+			return fmt.Errorf("could not run pre-build hooks : %s", err.Error())
+		}
+	}
+	preHookEnd := time.Since(preHookStart)
 
 	componentCache := caching.ComponentCache{
 		Static:  make(map[string]*caching.Component),
@@ -62,6 +118,8 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return errors.New("could not get PreventFOUC nodes : " + err.Error())
 		}
 	}
+
+	compilationStart := time.Now()
 
 	logger.Info("Resolving components usage and compiling...")
 	for _, filePath := range scanned.HtmlFiles {
@@ -266,7 +324,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		logger.Info("Saved to %s", outPath)
 	}
 
-	processingEnd := time.Since(start)
+	processingEnd := time.Since(compilationStart)
 
 	if outputDirOverride != "" {
 		err = os.MkdirAll(filepath.Join(outputDir, "_sklair"), 0755)
@@ -296,23 +354,59 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
 		}
 
-		data, err := os.ReadFile(filePath)
+		err = util.CopyFile(filePath, outPath, 0644)
 		if err != nil {
-			return fmt.Errorf("could not read static file %s : %s", filePath, err.Error())
-		}
-
-		err = os.WriteFile(outPath, data, 0644)
-		if err != nil {
-			return fmt.Errorf("could not write static file %s : %s", filePath, err.Error())
+			return fmt.Errorf("could not copy static file %s : %s", filePath, err.Error())
 		}
 
 		logger.Info("Copied static file to %s", outPath)
 	}
 
+	staticEnd := time.Since(staticStart)
+
+	postHookStart := time.Now()
+	if hasHooks {
+		buildSklairDir := filepath.Join(outputDir, "_sklair") // TODO: the _sklair directory in output is not unique to hooks, they will be used for more things in the future
+
+		isEmpty, err := util.IsDirEmpty(generatedDir)
+		if err != nil {
+			exist := os.IsExist(err)
+			if exist {
+				return fmt.Errorf("could not check if generated directory is empty : %s", err.Error())
+			} else {
+				isEmpty = true
+			}
+		}
+		if !isEmpty {
+			err = util.CopyDir(generatedDir, buildSklairDir)
+			if err != nil {
+				return fmt.Errorf("could not copy generated files to Sklair's namespace : %s", err.Error())
+			}
+		}
+
+		logger.Info("Running post-build hooks...")
+		err = hooks.RunHooks(hooksDir, allHooks.PostBuild, &luaSandbox.FSContext{
+			CacheDir:     cacheDir,
+			ProjectDir:   inputDir,
+			TempDir:      tempDir,
+			GeneratedDir: buildSklairDir,
+			BuiltDir:     outputDir,
+			Mode:         luaSandbox.HookModePost,
+		})
+		if err != nil {
+			return fmt.Errorf("could not run post-build hooks : %s", err.Error())
+		}
+	}
+	postHookEnd := time.Since(postHookStart)
+
 	//logger.EmptyLine()
-	logger.Info("Compilation time (including writes) : %s", processingEnd)
-	logger.Info("Static copy time : %s", time.Since(staticStart))
-	logger.Info("Total processing time : %s", time.Since(start))
+	logger.Info("Compilation (including writes) of %d files : %s", len(scanned.HtmlFiles), processingEnd)
+	logger.Info("Static copy of %d files : %s", len(scanned.StaticFiles), staticEnd)
+	if hasHooks {
+		logger.Info("Run time of %d pre-build hooks : %s", len(allHooks.PreBuild), preHookEnd)
+		logger.Info("Run time of %d post-build hooks : %s", len(allHooks.PostBuild), postHookEnd)
+	}
+	logger.Info("Time since start : %s", time.Since(start))
 
 	return nil
 }

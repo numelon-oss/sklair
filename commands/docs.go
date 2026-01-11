@@ -2,8 +2,8 @@ package commands
 
 import (
 	"fmt"
-	"sklair/cliutil"
 	"sklair/commandRegistry"
+	"sklair/util"
 )
 
 const docsURL = "https://sklair-docs.numelon.com/"
@@ -13,7 +13,7 @@ func init() {
 		Name:        "docs",
 		Description: "Opens the documentation in your browser",
 		Run: func(args []string) int {
-			if err := cliutil.OpenBrowser(docsURL); err != nil {
+			if err := util.OpenBrowser(docsURL); err != nil {
 				fmt.Println(docsURL)
 				return 1
 			}

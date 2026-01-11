@@ -3,9 +3,9 @@ package commands
 import (
 	"fmt"
 	"os"
-	"sklair/cliutil"
 	"sklair/commandRegistry"
 	"sklair/sklairConfig"
+	"sklair/util"
 )
 
 func init() {
@@ -29,7 +29,7 @@ func init() {
 			//	}
 			//}
 
-			if err := cliutil.OpenEditor(path); err != nil {
+			if err := util.OpenEditor(path); err != nil {
 				_, _ = fmt.Fprintln(os.Stderr, err)
 				return 1
 			}

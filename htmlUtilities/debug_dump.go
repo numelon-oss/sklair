@@ -40,6 +40,8 @@ func dumpNode(n *html.Node, depth int) {
 
 	case html.CommentNode:
 		fmt.Printf("%s<!-- %s -->\n", indent, n.Data)
+
+	default:
 	}
 
 	for c := n.FirstChild; c != nil; c = c.NextSibling {
