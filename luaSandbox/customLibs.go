@@ -15,7 +15,13 @@ type customLuaLib struct {
 var customLibs = []customLuaLib{
 	{"fs", openFs},
 	{"json", func(_ *SandboxOptions) lua.LGFunction {
-		return json.Loader
+		return func(L *lua.LState) int {
+			n := json.Loader(L)
+			mod := L.Get(-1)
+			L.SetGlobal("json", mod)
+			L.Pop(n)
+			return 0
+		}
 	}},
 }
 

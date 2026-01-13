@@ -49,7 +49,7 @@ func RunHooks(hooksDir string, hooks []string, ctx *luaSandbox.FSContext) error 
 		case err := <-done:
 			L.Close()
 			if err != nil {
-				return fmt.Errorf("hook %s failed : %s", hookFilename, err.Error())
+				return fmt.Errorf("hook %s failed\n%s", hookFilename, err.Error())
 			}
 		}
 	}
