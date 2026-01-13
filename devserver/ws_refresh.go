@@ -2,6 +2,7 @@ package devserver
 
 import (
 	_ "embed"
+	"strings"
 
 	"golang.org/x/net/html"
 )
@@ -17,4 +18,8 @@ var WSScriptNode = &html.Node{
 	Type: html.ElementNode,
 	Data: "script",
 	Attr: []html.Attribute{{Key: "src", Val: WSDevScriptPath}},
+}
+
+func init() {
+	WSDevScript = strings.ReplaceAll(WSDevScript, "WEBSOCKET_PATH", WSPath)
 }

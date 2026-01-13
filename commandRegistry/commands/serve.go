@@ -7,8 +7,6 @@ import (
 	"sklair/devserver"
 	"sklair/logger"
 	"sklair/sklairConfig"
-	"strconv"
-	"strings"
 )
 
 // REBUILDING ONLY CHANGES FILES:
@@ -54,10 +52,6 @@ func init() {
 				return 1
 			}
 			defer listener.Close()
-
-			addr := "localhost:" + strconv.Itoa(port)
-			devserver.WSDevScript = strings.ReplaceAll(devserver.WSDevScript, "WEBSOCKET_PATH", devserver.WSPath)
-			devserver.WSDevScript = strings.ReplaceAll(devserver.WSDevScript, "WEBSOCKET", addr)
 
 			wsThing := devserver.NewWS()
 
