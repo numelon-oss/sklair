@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en" class="bg-background text-black">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>Sklair | Download</title>
+</head>
+
+<body class="font-secondary">
+    <!-- THESE ARE MOSTLY HEAD COMPONENTS! -->
+    <CommonHead></CommonHead>
+    <Analytics></Analytics>
+    <OpenGraph site_name="Sklair" title="Sklair | Download"
+        description="Learn how to download Sklair - a compiler that extends HTML with build-time structure, composition, and logic."
+        image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com"></OpenGraph>
+    <!-- --------------------------------- -->
+
+    <MenuBar></MenuBar>
+
+    <section class="w-full bg-background px-6 py-20 mt-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h1 class="text-4xl sm:text-5xl font-main mb-6">
+                Download Sklair
+            </h1>
+            <p class="text-base sm:text-lg font-secondary text-gray-700">
+                Sklair is currently distributed as standalone binaries via GitHub Releases.
+                <br class="hidden sm:inline">
+                Choose your platform below.
+            </p>
+        </div>
+    </section>
+
+    <section class="w-full bg-alternative px-6 py-16">
+        <div class="max-w-5xl mx-auto grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+
+            <div class="rounded-xl border border-gray-300 p-6 bg-white shadow-sm">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fab fa-apple text-2xl"></i>
+                    <h2 class="text-xl font-semibold font-main">macOS</h2>
+                </div>
+
+                <div class="space-y-2 font-secondary">
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-darwin-amd64"
+                        class="block hover:underline">
+                        Intel (amd64)
+                    </a>
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-darwin-arm64"
+                        class="block hover:underline">
+                        Apple Silicon (arm64)
+                    </a>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-300 p-6 bg-white shadow-sm">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fab fa-microsoft text-2xl"></i>
+                    <h2 class="text-xl font-semibold font-main">Windows</h2>
+                </div>
+
+                <div class="space-y-2 font-secondary">
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-windows-amd64"
+                        class="block hover:underline">
+                        AMD64
+                    </a>
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-windows-arm64"
+                        class="block hover:underline">
+                        ARM64
+                    </a>
+                </div>
+            </div>
+
+            <div class="rounded-xl border border-gray-300 p-6 bg-white shadow-sm">
+                <div class="flex items-center gap-3 mb-4">
+                    <i class="fab fa-linux text-2xl"></i>
+                    <h2 class="text-xl font-semibold font-main">Linux</h2>
+                </div>
+
+                <div class="space-y-2 font-secondary">
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-linux-amd64"
+                        class="block hover:underline">
+                        AMD64
+                    </a>
+                    <a href="https://github.com/numelon-oss/sklair-cli/releases/latest/download/sklair-linux-arm64"
+                        class="block hover:underline">
+                        ARM64
+                    </a>
+                </div>
+            </div>
+
+        </div>
+
+        <div class="max-w-4xl mx-auto mt-10 text-center text-sm text-gray-600 font-secondary">
+            <a href="https://github.com/numelon-oss/sklair-cli/releases/latest" class="hover:underline">
+                View all releases on GitHub →
+            </a>
+        </div>
+
+        <div class="max-w-4xl mx-auto font-secondary text-gray-700">
+            <h2 class="text-2xl font-main mb-4">Installation notes</h2>
+
+            <ul class="list-disc list-inside space-y-2">
+                <li>
+                    The downloaded binary may need to be marked as executable on macOS/Linux:
+                    <code class="bg-gray-100 px-2 py-1 rounded">chmod +x sklair</code>
+                </li>
+                <li>
+                    macOS users may need to allow the binary in system security settings.
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="w-full bg-background px-6 py-16">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-2xl font-main mb-4">Package managers (coming later)</h2>
+
+            <p class="font-secondary text-gray-700">
+                Sklair will eventually be available via package managers such as
+                Homebrew, Winget, and APT.
+                <br class="hidden sm:inline">
+                For now, GitHub Releases are the canonical distribution method.
+            </p>
+        </div>
+    </section>
+
+    <section class="w-full bg-alternative px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                Getting started
+            </h2>
+
+            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
+                Once Sklair is installed, <code>sklair help</code> tells you about available commands and what they do.
+                <br><br>
+                To start a project, run:
+            </p>
+
+            <pre class="mt-4 mb-6 bg-background text-black rounded-xl p-4 text-left overflow-x-auto">
+sklair init</pre>
+
+            <p class="font-secondary text-gray-700 leading-relaxed">
+                Sklair will guide you through a short questionnaire and generate a
+                <code>sklair.json</code> file in the current directory.
+                <br><br>
+                This file defines how your project is built. No surprises.
+            </p>
+        </div>
+    </section>
+
+    <section class="w-full bg-background px-6 py-16">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-2xl font-main mb-4">Need help?</h2>
+
+            <p class="font-secondary text-gray-700 mb-6">
+                If you get stuck or have questions, the Sklair community is happy to help.
+            </p>
+
+            <a href="https://discord.gg/Hr3GYj7nsc"
+                class="inline-flex items-center gap-3 px-6 py-3 rounded-xl bg-indigo-600 text-white hover:bg-indigo-700 transition">
+                <i class="fab fa-discord text-xl"></i>
+                Join the Discord
+            </a>
+        </div>
+    </section>
+
+
+    <CustomFooter></CustomFooter>
+</body>
+
+</html>

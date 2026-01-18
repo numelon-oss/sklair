@@ -1,3 +1,3 @@
-for _, v in pairs(fs.scandir("cache:")) do
-    print(v.name, v.isDir)
-end
+-- for _, v in pairs(fs.scandir("cache:")) do
+--     print(v.name, v.isDir)
+-- end

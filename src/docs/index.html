@@ -1,21 +1,52 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="bg-background text-black">
 
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Sklair | Documentation - Coming soon.</title>
+
+    <title>Sklair | Documentation</title>
 </head>
 
-<body>
+<body class="font-secondary">
     <!-- THESE ARE MOSTLY HEAD COMPONENTS! -->
     <CommonHead></CommonHead>
     <Analytics></Analytics>
+    <OpenGraph site_name="Sklair" title="Sklair | Documentation"
+        description="Documentation is coming soon for Sklair - a compiler that extends HTML with build-time structure, composition, and logic."
+        image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com"></OpenGraph>
     <!-- --------------------------------- -->
 
-    <h1>Coming soon!</h1>
+    <MenuBar></MenuBar>
 
-    <a href="../">Go back to Sklair</a>
+    <section class="w-full min-h-screen flex items-center bg-background px-6 mt-20">
+        <div class="max-w-3xl mx-auto text-center">
+            <h1 class="text-4xl sm:text-5xl font-main mb-6">
+                Documentation
+            </h1>
+
+            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
+                Sklair's documentation is currently a work in progress.
+                <br><br>
+                The project is still evolving rapidly, and we want the documentation
+                to reflect how Sklair is actually used in real production environments -
+                not just how it looks on paper.
+                <br><br>
+                As Sklair matures and gains wider adoption, comprehensive documentation
+                covering concepts, directives, components, hooks, and workflows will be
+                published here.
+            </p>
+
+            <p class="mt-8 font-secondary text-gray-600">
+                For now, the source of truth is the <a href="https://github.com/numelon-oss/sklair-cli"
+                    class="underline">codebase</a> and
+                <a href="https://github.com/numelon-oss/sklair-cli/releases" class="underline">release notes</a>.
+            </p>
+        </div>
+    </section>
+
+
+    <CustomFooter></CustomFooter>
 </body>
 
 </html>

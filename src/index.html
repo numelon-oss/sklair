@@ -13,17 +13,16 @@
     <CommonHead></CommonHead>
     <Analytics></Analytics>
     <OpenGraph site_name="Sklair" title="Sklair | HTML deserved better."
-        description="Sklair is a modern compiler that empowers HTML to reach its full potential - without the frameworks."
+        description="Sklair is a compiler that extends HTML with build-time structure, composition, and logic."
         image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com"></OpenGraph>
     <!-- --------------------------------- -->
 
     <MenuBar></MenuBar>
 
-    <!-- added mt-20 top margin because menubar is on top -->
-    <section class="w-full min-h-screen flex flex-col justify-center bg-background px-6 mt-20">
+    <section class="w-full min-h-screen flex flex-col justify-center bg-background px-6">
 
         <div
-            class="relative w-full max-w-5xl h-[75vh] mx-auto rounded-2xl overflow-hidden shadow-xl border border-gray-300">
+            class="relative w-full max-w-7xl h-[75vh] mx-auto rounded-2xl overflow-hidden shadow-xl border border-gray-300">
             <div class="absolute inset-0 z-0 bg-cover bg-center" style="background-image: url('img/hero.jpg');"></div>
             <div class="absolute inset-0 z-10 bg-orange-950/30 backdrop-brightness-90"></div>
 
@@ -33,9 +32,20 @@
                         HTML deserved better.
                     </h1>
                     <p class="text-lg sm:text-xl font-secondary mb-8">
-                        Sklair is not a framework - it's a compiler that breathes life into HTML,<br>
-                        making it practical, elegant, and expressive again.
+                        Sklair is a compiler that extends HTML with build-time structure, composition, and logic -
+                        without changing how the web runs.
                     </p>
+
+                    <div class="flex flex-wrap gap-4">
+                        <a href="/download"
+                            class="px-6 py-3 rounded-xl bg-white text-black font-semibold hover:bg-gray-100 transition">
+                            Download
+                        </a>
+                        <a href="https://github.com/numelon-oss/sklair-cli" target="_blank"
+                            class="px-6 py-3 rounded-xl border border-white/40 hover:bg-white/10 transition">
+                            GitHub
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -46,29 +56,169 @@
 
     </section>
 
-    <section class="w-full bg-alternative text-black px-6 py-16 border-t border-gray-200">
+    <section class="w-full bg-background text-black px-6 py-20">
         <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">An ideological revolt</h2>
-            <p class="text-base sm:text-lg font-secondary text-gray-700">
-                Sklair exists because we believe the web <em>partially</em> went wrong. <br>
-                We reject bloated runtimes, synthetic DOMs, and needless complexity.
-                <br class="hidden sm:inline">
-                HTML, CSS, and JS were enough - and still are - if given the right tools.
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                What <em>is</em> Sklair?
+            </h2>
+
+            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
+                Sklair is not a framework. It does not replace the DOM, ship a runtime, or redefine how browsers work.
+                <br><br>
+                Instead, Sklair operates entirely at <strong>build time</strong>, extending HTML with
+                <strong>components, compiler directives, deterministic optimisation, and sandboxed build hooks.</strong>
+
+                <br><br>
+                All of this while producing plain, standard HTML as output.
             </p>
         </div>
     </section>
 
-    <section class="w-full bg-background text-black px-6 py-16 border-t border-gray-200">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">Open-source.. soon!</h2>
-            <p class="text-base sm:text-lg font-secondary text-gray-700">
-                Sklair is currently a proprietary internal tool at <strong>Numelon</strong>. <br>
-                We plan to open-source it once it's even better, likely sometime in <strong>2026</strong>.
-                <br class="hidden sm:inline">
-                We're already satisfied with it - but perfection is our standard.
-            </p>
+    <section class="w-full bg-alternative text-black px-6 py-20">
+        <div class="max-w-5xl mx-auto">
+            <h2 class="text-3xl sm:text-4xl font-main mb-12 text-center">
+                What Sklair gives you
+            </h2>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 font-secondary text-gray-700">
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Compile-time components</h3>
+                    <p>
+                        Define reusable HTML components that expand deterministically at build time.
+                        No runtime cost, no client-side abstraction - just clean output.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Compiler directives</h3>
+                    <p>
+                        Guide compilation with explicit directives:
+                        ordering barriers, removal blocks, and classification hints
+                        that give you control without sacrificing automation.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Polyglot HTML</h3>
+                    <p>
+                        Specific directives such as <code>sklair:remove</code> can be used to write HTML that works bot
+                        has raw HTML and as Sklair input.
+                        Useful for previews, isolated component development, and editor tooling.
+                    </p>
+                </div>
+
+                <div>
+                    <h3 class="text-xl font-semibold mb-3">Deterministic optimisation</h3>
+                    <p>
+                        Sklair performs predictable, explainable optimisations -
+                        especially in <code>&lt;head&gt;</code> ordering and deduplication -
+                        without hidden heuristics.
+                    </p>
+                </div>
+
+            </div>
         </div>
     </section>
+
+    <section class="w-full bg-background text-black px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                Build-time hooks, safely
+            </h2>
+
+            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
+                Sklair supports <strong>pre-</strong> and <strong>post-build hooks</strong>
+                written in sandboxed Lua.
+                <br><br>
+                Hooks are ideal for data preparation, asset transformation,
+                and generating build-time artefacts - without introducing runtime complexity.
+            </p>
+        </div>
+
+        <div class="max-w-5xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-gray-700 font-secondary">
+
+            <div>
+                <h3 class="font-semibold mb-2">Sandboxed by design</h3>
+                <p>
+                    Hooks run in a restricted environment with a controlled filesystem API -
+                    no unrestricted OS access.
+                </p>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">Deterministic execution</h3>
+                <p>
+                    Hooks run sequentially, without background tasks or concurrency.
+                    Builds remain predictable and reproducible.
+                </p>
+            </div>
+
+            <div>
+                <h3 class="font-semibold mb-2">Data-first workflows</h3>
+                <p>
+                    Perfect for compiling structured data into optimised assets
+                    that your site can consume directly.
+                </p>
+            </div>
+
+        </div>
+    </section>
+
+    <section class="w-full bg-alternative text-black px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                Works with SPAs, too
+            </h2>
+
+            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
+                Sklair does not inherently impose an application model.
+                <br><br>
+                Whether you're building a static site, a hybrid app, or a fully client-driven SPA,
+                Sklair prepares your HTML, data, and assets -
+                how you use JavaScript on top is entirely up to you.
+            </p>
+
+            <!-- TODO: future -->
+            <!-- <p class="mt-4 text-sm text-gray-600">
+                Learn more about SPAs with Sklair in the documentation.
+            </p> -->
+        </div>
+    </section>
+
+    <section class="w-full bg-background text-black px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                Where Sklair is going
+            </h2>
+
+            <ul class="font-secondary text-gray-700 space-y-3">
+                <li>Nested components with circular dependency detection</li>
+                <li>Dynamic resource hints (<code>preconnect</code>, <code>dns-prefetch</code>)</li>
+                <li>Full Lua block support inside documents</li>
+                <li>Package manager distribution (brew, winget, apt)</li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="w-full bg-alternative text-black px-6 py-20">
+        <div class="max-w-4xl mx-auto text-center">
+            <h2 class="text-3xl sm:text-4xl font-main mb-6">
+                Ready to try Sklair?
+            </h2>
+
+            <div class="flex justify-center gap-4">
+                <a href="/download" class="px-6 py-3 rounded-xl bg-black text-white hover:bg-gray-900 transition">
+                    Download
+                </a>
+                <a href="https://github.com/numelon-oss/sklair-cli"
+                    class="px-6 py-3 rounded-xl border border-black/20 hover:bg-black/5 transition">
+                    GitHub
+                </a>
+            </div>
+        </div>
+    </section>
+
 
     <CustomFooter></CustomFooter>
 </body>
