@@ -96,14 +96,16 @@
                         Guide compilation with explicit directives:
                         ordering barriers, removal blocks, and classification hints
                         that give you control without sacrificing automation.
+
+                        Directives are explicit, readable, and intentionally limited - Sklair avoids implicit magic.
                     </p>
                 </div>
 
                 <div>
                     <h3 class="text-xl font-semibold mb-3">Polyglot HTML</h3>
                     <p>
-                        Specific directives such as <code>sklair:remove</code> can be used to write HTML that works bot
-                        has raw HTML and as Sklair input.
+                        Specific directives such as <code>sklair:remove</code> can be used to write HTML that works both
+                        as raw HTML and as Sklair input.
                         Useful for previews, isolated component development, and editor tooling.
                     </p>
                 </div>
@@ -193,6 +195,7 @@
             </h2>
 
             <ul class="font-secondary text-gray-700 space-y-3">
+                <li>Directive system expansion (conditional compilation, data-driven builds)</li>
                 <li>Nested components with circular dependency detection</li>
                 <li>Dynamic resource hints (<code>preconnect</code>, <code>dns-prefetch</code>)</li>
                 <li>Full Lua block support inside documents</li>
@@ -201,24 +204,11 @@
         </div>
     </section>
 
-    <section class="w-full bg-alternative text-black px-6 py-20">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">
-                Ready to try Sklair?
-            </h2>
+    <TrySklairCTA></TrySklairCTA>
 
-            <div class="flex justify-center gap-4">
-                <a href="/download" class="px-6 py-3 rounded-xl bg-black text-white hover:bg-gray-900 transition">
-                    Download
-                </a>
-                <a href="https://github.com/numelon-oss/sklair-cli"
-                    class="px-6 py-3 rounded-xl border border-black/20 hover:bg-black/5 transition">
-                    GitHub
-                </a>
-            </div>
-        </div>
-    </section>
+    <HowItWorksSection></HowItWorksSection>
 
+    <TrySklairCTA></TrySklairCTA>
 
     <CustomFooter></CustomFooter>
 </body>

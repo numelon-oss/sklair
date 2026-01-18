@@ -25,6 +25,7 @@ type ComponentCache struct {
 // if you tried to use this feature, you must at least LOOK like you used it correctly,
 // otherwise later stages will come back to bite you
 func naiveValidation(b []byte) error {
+	// TODO: ensure these are only naively detected within comments
 	if bytes.Contains(b, []byte("sklair:ordering-barrier")) {
 		if !bytes.Contains(b, []byte("treat-as=")) {
 			return errors.New("ordering barrier missing treat-as= in component")
