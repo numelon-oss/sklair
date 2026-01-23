@@ -1,0 +1,47 @@
+/* -------------------------------------------------- */
+/* selection stuff */
+/* -------------------------------------------------- */
+
+::selection {
+  background: #cbb19d;
+  color: #2b211b;
+  text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.15);
+}
+
+::-moz-selection {
+  background: #cbb19d;
+  color: #2b211b;
+  text-shadow: 0 0 0.5px rgba(0, 0, 0, 0.15);
+}
+
+/* -------------------------------------------------- */
+/* scrollbar stuff */
+/* -------------------------------------------------- */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #9a7f6a #ead8c9;
+}
+
+/* webkit */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: #ead8c9; /* alternative */
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #9a7f6a;
+  border-radius: 999px;
+  border: 2px solid #ead8c9;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #7c6453;
+}
+
+::-webkit-scrollbar-corner {
+  background: #ead8c9;
+}

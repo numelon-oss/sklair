@@ -1,5 +1,8 @@
 {
-	"hooks": "./hooks",
+	"hooks": {
+		"enabled": true,
+		"path": "./hooks"
+	},
 
 	"input": "./",
 	"components": "./components",
