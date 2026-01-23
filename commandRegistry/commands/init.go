@@ -58,6 +58,13 @@ func configurationSummary(cfg sklairConfig.ProjectConfig) {
 	fmt.Println()
 	fmt.Println(logger.Green + "Configuration summary:")
 	fmt.Println("--------------------------------------------------" + logger.Cyan)
+	if cfg.Hooks != nil && cfg.Hooks.Enabled {
+		preeeent("Use hooks:", "enabled")
+		preeeent("Hooks directory:", cfg.Hooks.Path)
+	} else {
+		preeeent("Use hooks:", "disabled")
+	}
+
 	preeeent("Input directory:", cfg.Input)
 	preeeent("Components directory:", cfg.Components)
 
@@ -94,6 +101,15 @@ func init() {
 			// TODO: add --yes flag which automatically saves default sklair config
 			cfg := sklairConfig.DefaultConfig
 
+			cfg.Hooks.Enabled = askBool("Do you want to use pre/post-compile Lua hooks?", cfg.Hooks.Enabled)
+			if cfg.Hooks.Enabled {
+				cfg.Hooks.Path = askString("Where are your hooks located?", cfg.Hooks.Path)
+
+				fmt.Println(logger.Yellow + "Options for the HTTP library used by hooks are not configurable using sklair init. You can edit them yourself in sklair.json." + logger.Reset)
+			} else {
+				cfg.Hooks = nil
+			}
+
 			cfg.Input = askString("Where is your site source located?", cfg.Input)
 			cfg.Components = askString("Where are your components located?", cfg.Components)
 
@@ -106,6 +122,9 @@ func init() {
 			// TODO: in the future, when ObfuscateJS is extended as a bigger object (instead of a regular bool),
 			// this question stays the same but notify the user that they can configure it in sklair.json themselves
 			cfg.ObfuscateJS.Enabled = askBool("Do you want Sklair to obfuscate your outputted JS?", cfg.ObfuscateJS.Enabled)
+			if !cfg.ObfuscateJS.Enabled {
+				cfg.ObfuscateJS = nil
+			}
 
 			// TODO: add a "more info available at <docs link>" to this question because it is a bit vague
 			cfg.PreventFOUC.Enabled = askBool("Do you want Sklair to help prevent FOUC (Flash Of Unstyled Content)?", cfg.PreventFOUC.Enabled)

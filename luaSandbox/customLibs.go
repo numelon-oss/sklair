@@ -12,8 +12,16 @@ type customLuaLib struct {
 	libFactory LFuncWithSandboxContext
 }
 
+type HookMode uint8
+
+const (
+	HookModePre HookMode = iota
+	HookModePost
+)
+
 var customLibs = []customLuaLib{
 	{"fs", openFs},
+	//{"http", openHttp},
 	{"json", func(_ *SandboxOptions) lua.LGFunction {
 		return func(L *lua.LState) int {
 			n := json.Loader(L)

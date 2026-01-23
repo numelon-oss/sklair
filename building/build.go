@@ -25,10 +25,14 @@ import (
 
 func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverride string) error {
 	start := time.Now()
-	
+
 	inputDir := filepath.Join(configDir, config.Input)
 	componentsDir := filepath.Join(configDir, config.Components)
-	hooksDir := filepath.Join(configDir, config.Hooks)
+	hooksPath := ""
+	if config.Hooks != nil && config.Hooks.Enabled {
+		hooksPath = config.Hooks.Path
+	}
+	hooksDir := filepath.Join(configDir, hooksPath)
 
 	outputDir := outputDirOverride
 	if outputDirOverride == "" {
@@ -80,7 +84,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return errors.New("could not scan components : " + err.Error())
 	}
 
-	hasHooks := config.Hooks != ""
+	hasHooks := config.Hooks != nil && config.Hooks.Enabled
 	var allHooks *discovery.Hookset
 	preHookStart := time.Now()
 	if hasHooks {

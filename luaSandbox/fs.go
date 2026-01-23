@@ -9,13 +9,6 @@ import (
 	lua "github.com/yuin/gopher-lua"
 )
 
-type HookMode uint8
-
-const (
-	HookModePre HookMode = iota
-	HookModePost
-)
-
 type FSContext struct {
 	CacheDir     string
 	ProjectDir   string
@@ -27,20 +20,20 @@ type FSContext struct {
 
 func openFs(opts *SandboxOptions) lua.LGFunction {
 	return func(L *lua.LState) int {
-		fsWithContext := make(map[string]lua.LGFunction, len(fsFuncs))
+		contextualised := make(map[string]lua.LGFunction, len(fsFuncs))
 		for name, f := range fsFuncs {
-			fsWithContext[name] = f(&opts.FSContext)
+			contextualised[name] = f(&opts.FSContext)
 		}
 
-		fsMod := L.RegisterModule("fs", fsWithContext)
+		fsMod := L.RegisterModule("fs", contextualised)
 		L.Push(fsMod)
 		return 0
 	}
 }
 
-type LFuncWithFSContext func(*FSContext) lua.LGFunction
+type lFuncWithFsContext func(*FSContext) lua.LGFunction
 
-var fsFuncs = map[string]LFuncWithFSContext{
+var fsFuncs = map[string]lFuncWithFsContext{
 	"read":    readFile,
 	"write":   writeFile,
 	"scandir": scanDir,
@@ -84,7 +77,7 @@ func resolvePath(ctx *FSContext, path string, mode AccessMode) (string, error) {
 		return filepath.Join(ctx.BuiltDir, strings.TrimPrefix(path, "built:")), nil
 	}
 
-	return "", errors.New("path must start with `cache`, `project`, `temporary`, `generated`, or `built`, followed by a colon and a relative path")
+	return "", errors.New("path must start with `cache`, `project`, `temp`, `generated`, or `built`, followed by a colon and a relative path")
 }
 
 // readFile reads the contents of a file specified by the first argument and returns the data and a potential error.

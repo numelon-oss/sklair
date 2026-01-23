@@ -29,8 +29,43 @@ jobs:
 
                   echo "Found release notes"
 
+    schema:
+      needs: release-notes-check
+      runs-on: ubuntu-latest
+
+      steps:
+        - name: Checkout
+          uses: actions/checkout@v6
+
+        - name: Setup Go
+          uses: actions/setup-go@v6
+          with:
+            go-version: "1.25"
+
+        - name: Build
+          run: |
+            mkdir -p schema-dist
+            
+            if [ "${{ github.ref_type }}" = "tag" ]; then
+              VERSION="${{ github.ref_name }}"
+            else
+              VERSION="development"
+            fi
+            
+            go run \
+              -ldflags "-X sklair/constants.Version=$VERSION" \
+              ./tools/schema > schema-dist/sklair-$VERSION.schema.json
+
+        - name: Upload schema artefact
+          uses: actions/upload-artifact@v6
+          with:
+            name: sklair-schema
+            path: schema-dist/*
+
     build:
-        needs: release-notes-check
+        needs:
+          - release-notes-check
+          - schema
         runs-on: ubuntu-latest
 
         strategy:
@@ -69,7 +104,7 @@ jobs:
                   if [ "${{ github.ref_type }}" = "tag" ]; then
                     VERSION="${{ github.ref_name }}"
                   else
-                    VERSION="development-build"
+                    VERSION="development"
                   fi
 
                   COMMIT=${{ github.sha }}
@@ -94,6 +129,7 @@ jobs:
         needs:
             - release-notes-check
             - build
+            - schema
         runs-on: ubuntu-latest
 
         steps:
