@@ -73,7 +73,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 
 	logger.Info("Indexing documents...")
-	scanned, err := discovery.DiscoverDocuments(inputDir, excludes)
+	scanned, err := discovery.DiscoverDocuments(inputDir, excludes, config.ExcludeCompile)
 	if err != nil {
 		return errors.New("could not scan documents : " + err.Error())
 	}

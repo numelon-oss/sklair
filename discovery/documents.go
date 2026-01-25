@@ -102,7 +102,7 @@ func isExcluded(rel string, excludes []string, includes []string) bool {
 	return false
 }
 
-func DiscoverDocuments(root string, excludes []string) (*DocumentLists, error) {
+func DiscoverDocuments(root string, excludes []string, excludeCompile []string) (*DocumentLists, error) {
 	lists := &DocumentLists{}
 
 	excludes = append(defaultExcludes, excludes...)
@@ -139,7 +139,7 @@ func DiscoverDocuments(root string, excludes []string) (*DocumentLists, error) {
 		}
 
 		ext := filepath.Ext(strings.ToLower(info.Name()))
-		if ext == ".htm" || ext == ".html" || ext == ".shtml" || ext == ".xhtml" {
+		if (ext == ".htm" || ext == ".html" || ext == ".shtml" || ext == ".xhtml") && !isExcluded(relPath, excludeCompile, includePatterns) {
 			lists.HtmlFiles = append(lists.HtmlFiles, path)
 		} else {
 			lists.StaticFiles = append(lists.StaticFiles, path)
