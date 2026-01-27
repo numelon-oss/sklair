@@ -84,6 +84,10 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return errors.New("could not scan components : " + err.Error())
 	}
 
+	// TODO: hooks are really messy here, especially the allHooks variable (potential nil reference later)
+	// so later rewrite some of it to be more readable and less error prone
+	// perhaps just abstract the entire hooks system into a function dedicated for this build step only?
+	// also rename the luaSandbox package to "hooks" because it makes more sense (or maybe dont)
 	hasHooks := config.Hooks != nil && config.Hooks.Enabled
 	var allHooks *discovery.Hookset
 	preHookStart := time.Now()

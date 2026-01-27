@@ -28,13 +28,23 @@ func run() int {
 		return 0
 	}
 
+	printBinPath := global.Bool("pbp", false, "Print the path to the sklair binary")
+
 	// wrong usage
 	if err := global.Parse(os.Args[1:]); err != nil {
 		return 2
 	}
 
+	if *printBinPath {
+		if exePath, err := os.Executable(); err == nil {
+			fmt.Println(exePath)
+		} else {
+			panic(err)
+		}
+	}
+
 	if *silent && (*verbose || *debug) {
-		_, _ = fmt.Fprintln(os.Stderr, "Cannot use --silent with --verbose or --debug")
+		_, _ = fmt.Fprintf(os.Stderr, "%sCannot use --silent with --verbose or --debug%s\n", logger.Red, logger.Reset)
 		return 2
 	}
 
@@ -44,13 +54,6 @@ func run() int {
 		level = logger.LevelError
 	case *debug:
 		level = logger.LevelDebug
-
-		// TODO: this is temporary!!
-		if exePath, err := os.Executable(); err == nil {
-			fmt.Println(exePath)
-		} else {
-			panic(err)
-		}
 	case *verbose:
 		level = logger.LevelInfo
 	}
@@ -68,7 +71,7 @@ func run() int {
 	cmdName := args[0]
 	cmd, ok := reg.Get(cmdName)
 	if !ok {
-		_, _ = fmt.Fprintf(os.Stderr, "Unknown command: %s\n\n", cmdName)
+		_, _ = fmt.Fprintf(os.Stderr, "%sUnknown command: %s%s\n\n", logger.Red, cmdName, logger.Reset)
 		reg.PrintHelp()
 		return 2
 	}
