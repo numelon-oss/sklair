@@ -37,7 +37,7 @@ func run() int {
 
 	if *printBinPath {
 		if exePath, err := os.Executable(); err == nil {
-			fmt.Println(exePath)
+			fmt.Println(logger.Cyan + exePath + logger.Reset)
 		} else {
 			panic(err)
 		}
