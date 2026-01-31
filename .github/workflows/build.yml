@@ -23,7 +23,8 @@ jobs:
                   FILE="${{ github.ref_name }}-RELEASE.md"
 
                   if [ ! -f "$FILE" ]; then
-                      echo "Release notes werent found for this tagged release. Aborting."
+                      echo "Expected $FILE to exist"
+                      echo "Release notes were not found for this tagged release. Aborting."
                       exit 1
                   fi
 
@@ -97,6 +98,8 @@ jobs:
 
             - name: Build
               run: |
+                  set -euo pipefail
+                
                   mkdir -p dist
                   EXT=""
                   if [ "${{ matrix.os }}" = "windows" ]; then EXT=".exe"; fi
@@ -112,13 +115,16 @@ jobs:
 
                   CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
                   go build \
-                  -ldflags "\
-                  -s -w \
-                  -X sklair/constants.Version=$VERSION \
-                  -X sklair/constants.Commit=$COMMIT \
-                  -X sklair/constants.BuildDate=$DATE \
-                  " \
-                  -o dist/sklair-${{ matrix.os }}-${{ matrix.arch }}$EXT
+                    -mod=readonly \
+                    -trimpath \
+                    -ldflags "-s -w \
+                    -X sklair/constants.Version=$VERSION \
+                    -X sklair/constants.Commit=$COMMIT \
+                    -X sklair/constants.BuildDate=$DATE \
+                    " \
+                    -o dist/sklair-${{ matrix.os }}-${{ matrix.arch }}$EXT
+                
+                  sha256sum dist/sklair-${{ matrix.os }}-${{ matrix.arch }}$EXT > dist/sklair-${{ matrix.os }}-${{ matrix.arch }}.sha256
 
             - name: Upload artefacts
               uses: actions/upload-artifact@v6
