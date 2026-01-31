@@ -110,9 +110,10 @@ jobs:
                   COMMIT=${{ github.sha }}
                   DATE=$(date -u +"%Y-%m-%d@%H:%M:%S")
 
-                  GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
+                  CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
                   go build \
                   -ldflags "\
+                  -s -w \
                   -X sklair/constants.Version=$VERSION \
                   -X sklair/constants.Commit=$COMMIT \
                   -X sklair/constants.BuildDate=$DATE \
