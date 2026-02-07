@@ -1,10 +1,3 @@
-// TAKEN FROM https://github.com/numelon-bespoke/sunc-chan
-// Copyright applies. This logger is proprietary software unless both signatories under the bespoke project agreement
-// have agreed to make this code publicly available to other projects both within the Bespoke program,
-// and to external projects unrelated to Numelon or the second signatory.
-
-// 30/11/2025 Awaiting approval
-
 package logger
 
 import (

@@ -191,7 +191,7 @@ func init() {
 		versionPath = "download/" + versionPath
 	}
 
-	SchemaURL = "https://github.com/numelon-oss/sklair-cli/releases/" + versionPath + "/sklair-" + regularVersion + ".schema.json" // TODO: change to sklair.numelon.com
+	SchemaURL = "https://github.com/numelon-oss/sklair/releases/" + versionPath + "/sklair-" + regularVersion + ".schema.json" // TODO: change to sklair.numelon.com
 
 	DefaultConfig.SchemaURL = SchemaURL
 }
