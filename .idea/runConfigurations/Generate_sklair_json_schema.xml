@@ -1,6 +1,6 @@
 <component name="ProjectRunConfigurationManager">
   <configuration default="false" name="Generate sklair.json schema" type="GoApplicationRunConfiguration" factoryName="Go Application">
-    <module name="sklair-cli" />
+    <module name="sklair" />
     <working_directory value="$PROJECT_DIR$" />
     <kind value="PACKAGE" />
     <package value="sklair/tools/schema" />
