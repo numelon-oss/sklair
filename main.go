@@ -28,19 +28,9 @@ func run() int {
 		return 0
 	}
 
-	printBinPath := global.Bool("pbp", false, "Print the path to the sklair binary")
-
 	// wrong usage
 	if err := global.Parse(os.Args[1:]); err != nil {
 		return 2
-	}
-
-	if *printBinPath {
-		if exePath, err := os.Executable(); err == nil {
-			fmt.Println(logger.Cyan + exePath + logger.Reset)
-		} else {
-			panic(err)
-		}
 	}
 
 	if *silent && (*verbose || *debug) {
