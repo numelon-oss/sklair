@@ -6,8 +6,9 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
-	"sklair/logger"
 	"strconv"
+
+	"github.com/numelon-oss/go-logger"
 
 	"golang.org/x/net/websocket"
 )

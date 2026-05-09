@@ -6,7 +6,8 @@ import (
 	"os"
 	"sklair/commandRegistry"
 	_ "sklair/commandRegistry/commands"
-	"sklair/logger"
+
+	"github.com/numelon-oss/go-logger"
 )
 
 func main() {
@@ -47,8 +48,7 @@ func run() int {
 	case *verbose:
 		level = logger.LevelInfo
 	}
-
-	logger.InitShared(level)
+	logger.SetLevel(level)
 
 	// --------------------------------------------------
 

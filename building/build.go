@@ -12,13 +12,14 @@ import (
 	"sklair/devserver"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
-	"sklair/logger"
 	"sklair/luaSandbox"
 	"sklair/sklairConfig"
 	"sklair/snippets"
 	"sklair/util"
 	"strings"
 	"time"
+
+	"github.com/numelon-oss/go-logger"
 
 	"golang.org/x/net/html"
 )

@@ -6,6 +6,7 @@ require (
 	github.com/bmatcuk/doublestar/v4 v4.10.0
 	github.com/fsnotify/fsnotify v1.10.1
 	github.com/invopop/jsonschema v0.14.0
+	github.com/numelon-oss/go-logger v1.0.0
 	github.com/yuin/gopher-lua v1.1.2
 	golang.org/x/net v0.54.0
 	layeh.com/gopher-json v0.0.0-20201124131017-552bb3c4c3bf

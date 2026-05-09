@@ -4,8 +4,9 @@ import (
 	"os"
 	"path/filepath"
 	"sklair/commandRegistry"
-	"sklair/logger"
 	"sklair/sklairConfig"
+
+	"github.com/numelon-oss/go-logger"
 )
 
 func init() {

@@ -6,9 +6,10 @@ import (
 	"fmt"
 	"os"
 	"sklair/commandRegistry"
-	"sklair/logger"
 	"sklair/sklairConfig"
 	"strings"
+
+	"github.com/numelon-oss/go-logger"
 )
 
 var reader = bufio.NewReader(os.Stdin)

@@ -1,8 +1,9 @@
 package devserver
 
 import (
-	"sklair/logger"
 	"sync"
+
+	"github.com/numelon-oss/go-logger"
 
 	"golang.org/x/net/websocket"
 )

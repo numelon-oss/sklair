@@ -5,8 +5,9 @@ import (
 	"sklair/building"
 	"sklair/commandRegistry"
 	"sklair/devserver"
-	"sklair/logger"
 	"sklair/sklairConfig"
+
+	"github.com/numelon-oss/go-logger"
 )
 
 // REBUILDING ONLY CHANGES FILES:
