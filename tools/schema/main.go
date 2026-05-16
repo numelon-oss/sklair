@@ -21,7 +21,7 @@ func main() {
 	schema := r.Reflect(&sklairConfig.ProjectConfig{})
 
 	schema.Title = "Sklair Project Configuration"
-	schema.ID = jsonschema.ID(sklairConfig.SchemaURL) // TODO: change to sklair.numelon.com
+	schema.ID = jsonschema.ID(sklairConfig.SchemaURL)
 
 	enc := json.NewEncoder(os.Stdout)
 	enc.SetIndent("", "\t")

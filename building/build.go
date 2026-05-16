@@ -89,10 +89,9 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	// so later rewrite some of it to be more readable and less error prone
 	// perhaps just abstract the entire hooks system into a function dedicated for this build step only?
 	// also rename the luaSandbox package to "hooks" because it makes more sense (or maybe dont)
-	hasHooks := config.Hooks != nil && config.Hooks.Enabled
-	var allHooks *discovery.Hookset
 	preHookStart := time.Now()
-	if hasHooks {
+	var allHooks *discovery.Hookset
+	if config.Hooks != nil && config.Hooks.Enabled {
 		logger.Info("Indexing hooks...")
 		allHooks, err = discovery.DiscoverHooks(hooksDir)
 		if err != nil {
@@ -374,7 +373,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	staticEnd := time.Since(staticStart)
 
 	postHookStart := time.Now()
-	if hasHooks {
+	if allHooks != nil {
 		buildSklairDir := filepath.Join(outputDir, "_sklair") // TODO: the _sklair directory in output is not unique to hooks, they will be used for more things in the future
 
 		isEmpty, err := util.IsDirEmpty(generatedDir)
@@ -411,7 +410,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	//logger.EmptyLine()
 	logger.Info("Compilation (including writes) of %d files : %s", len(scanned.HtmlFiles), processingEnd)
 	logger.Info("Static copy of %d files : %s", len(scanned.StaticFiles), staticEnd)
-	if hasHooks {
+	if allHooks != nil {
 		logger.Info("Run time of %d pre-build hooks : %s", len(allHooks.PreBuild), preHookEnd)
 		logger.Info("Run time of %d post-build hooks : %s", len(allHooks.PostBuild), postHookEnd)
 	}

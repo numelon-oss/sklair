@@ -8,18 +8,19 @@ import (
 // TODO: check TODO.md for more info about this
 
 type GlobalConfig struct {
-	CheckForUpdates bool `json:"checkForUpdates,omitempty"`
+	// TODO: to be removed, as Sklair is managed by package managers
+	//CheckForUpdates bool `json:"checkForUpdates,omitempty"`
 }
 
 var defaultGlobalConfig = GlobalConfig{
-	CheckForUpdates: true,
+	//CheckForUpdates: true,
 }
 
 func GlobalConfigPath() (string, error) {
-	home, err := os.UserHomeDir()
+	home, err := os.UserConfigDir()
 	if err != nil {
 		return "", err
 	}
 
-	return filepath.Join(home, ".sklair/config.json"), nil
+	return filepath.Join(home, "sklair/config.json"), nil
 }
