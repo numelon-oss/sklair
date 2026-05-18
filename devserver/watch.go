@@ -74,7 +74,7 @@ func shouldWatch(path string) bool {
 
 // TODO: dir parameter removed in favour of source and components dir and excludes list (when above changes are implemented)
 // also refer to commands/serve.go for more information
-func Watch(dir string) (<-chan bool, <-chan error) {
+func Watch(paths ...string) (<-chan bool, <-chan error) {
 	events := make(chan bool)
 	errs := make(chan error)
 
@@ -89,23 +89,25 @@ func Watch(dir string) (<-chan bool, <-chan error) {
 		}
 		defer watcher.Close()
 
-		// recursively watch ALL subdirectories
-		err = filepath.WalkDir(dir, func(path string, d fs.DirEntry, err error) error {
-			if err != nil {
-				return err
-			}
-			if d.IsDir() {
-				if shouldWatch(path) {
-					return watcher.Add(path)
-				} else {
-					return filepath.SkipDir
+		for _, root := range paths {
+			// recursively watch ALL subdirectories
+			err = filepath.WalkDir(root, func(path string, d fs.DirEntry, err error) error {
+				if err != nil {
+					return err
 				}
-			}
+				if d.IsDir() {
+					if shouldWatch(path) {
+						return watcher.Add(path)
+					} else {
+						return filepath.SkipDir
+					}
+				}
 
-			return nil
-		})
-		if err != nil {
-			errs <- err
+				return nil
+			})
+			if err != nil {
+				errs <- err
+			}
 		}
 
 		for {

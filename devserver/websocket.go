@@ -46,7 +46,7 @@ func (ws *WS) HandleWS(c *websocket.Conn) {
 		delete(ws.clients, c)
 		ws.mu.Unlock()
 		_ = c.Close()
-		//logger.Debug("Client disconnected")
+		logger.Debug("Client disconnected")
 	}()
 
 	logger.Debug("New client connected")

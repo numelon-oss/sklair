@@ -2,11 +2,15 @@ package commandRegistry
 
 // adapted from CommandRegistry intended for a bot in another numelon-proprietary project
 
-import "fmt"
+import (
+	"flag"
+	"fmt"
+)
 
 type Command struct {
 	Name        string
 	Description string
+	Flags       func() *flag.FlagSet
 	Run         func(args []string) int
 }
 

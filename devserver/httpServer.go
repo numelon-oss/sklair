@@ -43,19 +43,17 @@ func AcquirePort(addr string, port int) (net.Listener, int, error) {
 	return listener, port, nil
 }
 
-func try404(root string, w http.ResponseWriter, r *http.Request) {
-	p := filepath.Join(root, "404.html")
-	if _, err := os.Stat(p); err == nil {
-		w.WriteHeader(http.StatusNotFound)
-		http.ServeFile(w, r, p)
-		return
-	}
+var notFoundFiles = []string{"404.html", "404.shtml"}
 
-	p = filepath.Join(root, "404.shtml")
-	if _, err := os.Stat(p); err == nil {
-		w.WriteHeader(http.StatusNotFound)
-		http.ServeFile(w, r, p)
-		return
+// TODO: custom sklair 404 page soon
+func try404(root string, w http.ResponseWriter, r *http.Request) {
+	for _, filename := range notFoundFiles {
+		p := filepath.Join(root, filename)
+		if _, err := os.Stat(p); err == nil {
+			w.WriteHeader(http.StatusNotFound)
+			http.ServeFile(w, r, p)
+			return
+		}
 	}
 
 	http.Error(w, "404 not found", http.StatusNotFound)

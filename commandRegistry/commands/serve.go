@@ -1,14 +1,41 @@
 package commands
 
 import (
+	"flag"
+	"fmt"
 	"os"
+	"path/filepath"
 	"sklair/building"
 	"sklair/commandRegistry"
 	"sklair/devserver"
 	"sklair/sklairConfig"
+	"strings"
 
 	"github.com/numelon-oss/go-logger"
 )
+
+func getWatchPaths(src, components string) ([]string, error) {
+	watchPaths := []string{src}
+
+	inputAbs, err := filepath.Abs(src)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", src, err)
+	}
+
+	componentsAbs, err := filepath.Abs(components)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", components, err)
+	}
+
+	rel, err := filepath.Rel(inputAbs, componentsAbs)
+
+	// components are NOT inside input
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		watchPaths = append(watchPaths, components)
+	}
+
+	return watchPaths, nil
+}
 
 // REBUILDING ONLY CHANGES FILES:
 // in order to do so, we track changes from source dir and component dir
@@ -30,9 +57,30 @@ import (
 // --auto_refresh=true|false (websocket control, default true)
 // --watch=true|false (watch for changes, default true)
 func init() {
+	var portN int
+	var host string
+
+	var open bool
+	var autoRefresh bool
+	var watch bool
+
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "serve",
 		Description: "Continuously builds and serves a Sklair project for development purposes",
+
+		Flags: func() *flag.FlagSet {
+			fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+
+			fs.IntVar(&portN, "port", 0, "Port to listen on")
+			fs.StringVar(&host, "host", "localhost", "Host to listen on")
+
+			fs.BoolVar(&open, "open", false, "Open the default browser") // TODO: actually use this flag value
+			fs.BoolVar(&autoRefresh, "auto-refresh", true, "Automatically refresh connected preview instances")
+			fs.BoolVar(&watch, "watch", true, "Watch for filesystem changes") // TODO: actually use this flag value
+
+			return fs
+		},
+
 		Run: func(args []string) int {
 			config, configDir, err := sklairConfig.LoadProjectConfig()
 			if err != nil {
@@ -47,7 +95,7 @@ func init() {
 			}
 			defer os.RemoveAll(tmp)
 
-			listener, port, err := devserver.AcquirePort("localhost", 0)
+			listener, port, err := devserver.AcquirePort(host, portN)
 			if err != nil {
 				logger.Error("could not acquire port : %s", err.Error())
 				return 1
@@ -68,21 +116,16 @@ func init() {
 				return 1
 			}
 
-			// TODO: add port flag, auto_refresh bool (websocket) flag
-			// track changes from the following directories:
-			// - source directory (excluding components dir, if it is within the source directory)
-			// OR if the components directory is within the source directory then just ONLY track the source directory anyways
-			// - components directory by itself
-			// from all tracked directories, output dir must be excluded along with common excluded directories
 			// for now: ENTIRE project is rebuild on change
-
 			// but in the future maybe only rebuild changed files: see comment at very top
 
-			// try all ports from 8080 upwards (but obviously at some point theres a limit)
-			// websocket lives on same http, just connection upgrade
-			// after decided, they are now just hardcoded
+			watchPaths, err := getWatchPaths(config.Input, config.Components)
+			if err != nil {
+				logger.Error(err.Error())
+				return 1
+			}
 
-			events, errs := devserver.Watch(config.Input)
+			events, errs := devserver.Watch(watchPaths...)
 
 			for {
 				select {
@@ -96,7 +139,9 @@ func init() {
 						return 1
 					}
 
-					wsThing.Send <- "reload"
+					if autoRefresh {
+						wsThing.Send <- "reload"
+					}
 				case err := <-errs:
 					logger.Error(err.Error())
 				}

@@ -15,7 +15,7 @@ func main() {
 }
 
 func run() int {
-	reg := *commandRegistry.Registry
+	reg := commandRegistry.Registry
 
 	global := flag.NewFlagSet("sklair", flag.ContinueOnError)
 
@@ -68,5 +68,19 @@ func run() int {
 
 	// TODO: set up the sklair dir inside the users home directory here along with the default app config
 
-	return cmd.Run(args[1:])
+	remainingArgs := args[1:]
+	if cmd.Flags != nil {
+		fs := cmd.Flags()
+
+		if err := fs.Parse(remainingArgs); err != nil {
+			return 2
+		}
+
+		// fs is the flagset, fs.Args() gives the remaining args
+		// in this case, we send the remaining args
+		// as flags are assumed to be handled already in most command init() funcs
+		return cmd.Run(fs.Args())
+	}
+
+	return cmd.Run(remainingArgs)
 }

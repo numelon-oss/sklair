@@ -6,7 +6,7 @@ import (
 	"sklair/util"
 )
 
-const docsURL = "https://sklair-docs.numelon.com/"
+const docsURL = "https://sklair.numelon.com/docs"
 
 func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
