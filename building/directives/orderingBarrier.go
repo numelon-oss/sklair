@@ -30,10 +30,10 @@ func IsOBStart(n *html.Node) (bool, string) {
 
 	var treatAsTag string
 
-	parts := strings.Fields(text)
-	for _, part := range parts {
-		if strings.HasPrefix(part, "treat-as=") {
-			treatAsTag = strings.TrimPrefix(part, "treat-as=")
+	parts := strings.FieldsSeq(text)
+	for part := range parts {
+		if after, ok := strings.CutPrefix(part, "treat-as="); ok {
+			treatAsTag = after
 		}
 	}
 

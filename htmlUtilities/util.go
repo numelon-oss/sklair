@@ -1,7 +1,9 @@
 package htmlUtilities
 
 import (
+	"fmt"
 	"hash/maphash"
+	"os"
 	"strconv"
 	"strings"
 
@@ -108,4 +110,19 @@ func RemoveAllChildren(n *html.Node) {
 		n.RemoveChild(c)
 		c = next
 	}
+}
+
+func ParseFile(filePath string) (*html.Node, error) {
+	f, err := os.Open(filePath)
+	if err != nil {
+		return nil, fmt.Errorf("open %s: %w", filePath, err)
+	}
+	defer f.Close()
+
+	doc, err := html.Parse(f)
+	if err != nil {
+		return nil, fmt.Errorf("parse %s: %w", filePath, err)
+	}
+
+	return doc, nil
 }

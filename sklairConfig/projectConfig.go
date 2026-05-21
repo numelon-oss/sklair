@@ -45,7 +45,7 @@ func (HTTPMethod) JSONSchema() *jsonschema.Schema {
 type HooksHttpOptions struct {
 	// Whether HTTP requests should be allowed in pre- / post-build hooks.
 	HttpAllowed bool `json:"httpAllowed,omitempty" jsonschema:"title=Allow HTTP requests"`
-	// A list of hosts that are allowed to make HTTP(s) requests in pre/post-build hooks.
+	// A list of hosts that are allowed to make HTTP(s) requests in pre- / post-build hooks.
 	AllowedHosts []string `json:"allowedHosts,omitempty" jsonschema:"title=Allowed hosts"`
 	// A list of methods that are allowed to be used in pre- / post-build hooks.
 	AllowedMethods []HTTPMethod `json:"allowedMethods,omitempty" jsonschema:"title=Allowed methods"`
@@ -81,7 +81,7 @@ type ProjectConfig struct {
 	// This is usually automatically populated with whichever Sklair version created the project.
 	SchemaURL string `json:"$schema,omitempty"`
 
-	// Sandboxed Lua pre/post-build hook options.
+	// Sandboxed Lua pre- / post-build hook options.
 	Hooks *Hooks `json:"hooks,omitempty" jsonschema:"title=Hooks"`
 
 	// The directory where the project's source code is stored.
@@ -108,6 +108,9 @@ type ProjectConfig struct {
 
 	// Options for preventing Flash Of Unstyled Content (FOUC) in the final outputted HTML.
 	PreventFOUC *PreventFOUC `json:"preventFOUC,omitempty" jsonschema:"title=Prevent FOUC"`
+	// Components that compile into native browser templates when used in a document.
+	// Sklair Runtime is not included if this field is omitted.
+	Templates []string `json:"templates,omitempty" jsonschema:"title=Runtime templates"`
 	//ResourceHints *ResourceHints `json:"resourceHints,omitempty"` // TODO: in sklair init, add ResourceHints to the questionnaire
 }
 
