@@ -1,25 +1,41 @@
 package building
 
 import (
-	"errors"
 	"fmt"
 	"path/filepath"
 	"sklair/discovery"
+	"sklair/htmlUtilities"
 	"sklair/util"
-	"strings"
 
 	"golang.org/x/net/html"
 )
 
-func checkNoBody(node *html.Node) error {
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		if child.Type == html.TextNode && strings.TrimSpace(child.Data) == "" {
-			continue
-		}
+func contributeComponent(
+	name string,
+	resolver *componentResolver,
+	head *html.Node,
+	used map[string]struct{},
+	usedFolders map[string]discovery.ComponentSource,
+) error {
+	if _, exists := used[name]; exists {
+		return nil
+	}
+	used[name] = struct{}{}
 
-		return errors.New("component bodies are not supported")
+	component, err := resolver.Resolve(name)
+	if err != nil {
+		return err
+	}
+	for _, dependency := range component.Dependencies {
+		if err := contributeComponent(dependency, resolver, head, used, usedFolders); err != nil {
+			return err
+		}
 	}
 
+	htmlUtilities.AppendNodes(head, component.HeadNodes)
+	if source := resolver.sources[name]; source.IsFolder {
+		usedFolders[name] = source
+	}
 	return nil
 }
 

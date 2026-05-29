@@ -2,20 +2,6 @@
 
 ## todo list transferred from `numelon-proprietary/website` repo
 
-- create numelon web packing tool for creating websites
-  - allow for components
-    - e.g. `/components/someComponent.html` and `/components/someComponent.css`
-    - numelon web packing tool will search for components dir
-      - if html found then it will replace the tag inside the html with the actual content of the html file
-      - if css found for component in component dir then it will be automatically copied to the build directory into css dir and also the link href stylesheet injected into the head of the html file where the component was used
-      - if a component is not found, then just assume its a component registered from within js and leave it as-is, but issue a warning in the logs.
-      - if js file is found then assume regular html component registered via js and add the js to head tag. ofc if css with same name is found then import that too
-      - therefore, the order from most important to least is like this:
-        1. componentName.js -> import js (& optional CSS, if HTML is present then ignored) in head
-        2. componentName.html -> replace all occurrences of `<componentName/>` or `<componentName>` or `<componentName></componentName>` with contents of componentName.html. (& optional css in head)
-            - note that if it is `<componentName>aaa</componentName>` then `aaa` would be passed to `$$COMPONENT_BODY` var inside componentName.html.
-  - allow components to be used inside each-other (in src) but hard fail on circular component usage bc infinite loop
-
 - support for replacing $$COMPONENT_BODY inside JavaScript too, now just HTML with `<!-- $$COMPONENT_BODY -->`
 
 ## todo december 2025
@@ -31,18 +17,10 @@
   - installation instructions on website very nice
 - make sklair actually more of a cli tool
   - think in terms of subcommands:
-    - `sklair build` -> builds the website based on sklair.json file or default values (if no sklair.json then warn about defaults available on docs)
-    - `sklair serve` -> starts a local dev server, watching for changes and auto rebuild also ensure that its not actually built EVERY time theres a change (debounced) - also make a preview page available at like /_.sklairpreview which allows you to preview what components look like independently
-    - `sklair clean` -> removes all build artifacts (build dir, static dir)
     - `sklair update` -> updates sklair to the latest version (ALSO: ensure that on every run of sklair, it notifies the user of a new version unless auto update check is disabled in sklair config)
   - then only finally print a new empty line and then print build time stats etc (summary)
 - search for "TODO" in the entire project and attempt to fix all of those
 - long term: allow sklair to integrate third party stuff like tailwind compilation: sklair scans html, sees which classes are used, compiles css. likewise also scans css for tailwind class usage and adds them to css just in case, so that its also programmable.
-- recursively parse components (whilst avoiding circular dependencies/components)
-- allow components to be entire folders with index.html inside, and other files.
-  - usage of a file from the component folder, e.g. the component index.html references the local style.css inside the component folder will be detected byy sklair and then will be rewritten once compiled so that all paths are not broken
-  - at that rate, after compiling create a _sklair directory in the build folder where all component files live in and in the final html, component dependencies are referenced from there
-    - for example lets say that in component.html you reference ./someStyle.css as a stylesheet. regularly just by current component logic, someStyle.css wont be found because it is inside the components folder which doesnt get copied on build, and, either way even if it was copied then the reference would still be wrong because we use ./component.css in index.html but the actual file is in ./components/component.css. therefore sklair must be aware of this
 
 - extend CommandRegistry to allow per-subcommand help, also maybe fix per command flag parsing when required
 

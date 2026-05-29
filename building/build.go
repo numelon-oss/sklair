@@ -8,8 +8,6 @@ import (
 	"path/filepath"
 	"sklair/building/hooks"
 	"sklair/building/priorities"
-	"sklair/building/resources"
-	"sklair/caching"
 	"sklair/devserver"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
@@ -18,6 +16,7 @@ import (
 	"sklair/sklairConfig"
 	"sklair/snippets"
 	"sklair/util"
+	"sort"
 	"strings"
 	"time"
 
@@ -129,10 +128,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 	preHookEnd := time.Since(preHookStart)
 
-	componentCache := caching.ComponentCache{
-		Static:  make(map[string]*caching.Component),
-		Dynamic: make(map[string]*caching.Component),
-	}
+	componentResolver := newComponentResolver(componentsDir, components, templates)
 	usedComponentFolders := make(map[string]discovery.ComponentSource)
 	runtimeUsed := false
 
@@ -156,45 +152,27 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 
 		var toReplace []*html.Node
 
-		// lazy components below
-
 		for node := range doc.Descendants() {
 			if node.Type == html.ElementNode {
 				tag := strings.ToLower(node.Data)
 
 				if !htmlUtilities.HtmlTags[tag] {
-					_, dynamicExists := componentCache.Dynamic[tag]
-					_, staticExists := componentCache.Static[tag]
-
-					if !(dynamicExists || staticExists) && (!(tag == "lua" || tag == "opengraph")) {
-						componentSrc, exists := components[tag]
-						if !exists {
-							logger.Warning("Non-standard tag found in HTML and no component present : %s; assuming Autonomous Custom Element", tag)
-							continue
-						}
-
-						logger.Info("Processing and caching tag %s...", tag)
-						cached, err := caching.MakeCache(componentsDir, componentSrc.Entry())
-						if err != nil {
-							return fmt.Errorf("could not cache component %s : %s", componentSrc.Entry(), err.Error())
-						}
-						if componentSrc.IsFolder {
-							assetOutputDir := "/_sklair/components/" + tag
-							if err := resources.RewriteURLs(cached.HeadNodes, assetOutputDir); err != nil {
-								return fmt.Errorf("could not rewrite component %s head resource URLs : %s", componentSrc.Entry(), err.Error())
-							}
-							if err := resources.RewriteURLs(cached.BodyNodes, assetOutputDir); err != nil {
-								return fmt.Errorf("could not rewrite component %s body resource URLs : %s", componentSrc.Entry(), err.Error())
-							}
-						}
-
-						if cached.Dynamic {
-							componentCache.Dynamic[tag] = cached
-						} else {
-							componentCache.Static[tag] = cached
-						}
+					if tag == "lua" || tag == "opengraph" {
+						toReplace = append(toReplace, node)
+						continue
 					}
 
+					if _, exists := components[tag]; !exists {
+						logger.Warning("Non-standard tag found in HTML and no component present : %s; assuming Autonomous Custom Element", tag)
+						continue
+					}
+
+					if componentResolver.states[tag] == componentUnseen {
+						logger.Info("Processing and resolving tag %s...", tag)
+					}
+					if _, err := componentResolver.Resolve(tag); err != nil {
+						return fmt.Errorf("could not resolve component %s : %s", tag, err.Error())
+					}
 					toReplace = append(toReplace, node)
 				}
 			}
@@ -211,15 +189,13 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return fmt.Errorf("could not find head or body tags in %s, how does that even happen", filePath)
 		}
 
-		// usedComponents ensures that each component contributes its <head> nodes at most ONCE per document,
-		// even if the component appears multiple times in the source document
+		// usedComponents ensures each component and its recursive dependencies contribute
+		// their <head> nodes and folder assets at most once per document
 		usedComponents := make(map[string]struct{})
-		// seenHead, on the other hand, is used for actual deduplication
-		registeredRuntimeTemplates := make(map[string]struct{})
+		explicitRuntimeTemplates := make(map[string]struct{})
+		requiredRuntimeTemplates := make(map[string]struct{})
 		for _, originalTag := range toReplace {
 			tag := strings.ToLower(originalTag.Data)
-			stcComponent, staticExists := componentCache.Static[tag]
-			dynComponent, dynamicExists := componentCache.Dynamic[tag]
 
 			parent := originalTag.Parent
 			if parent == nil {
@@ -228,54 +204,39 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 
 			//fmt.Println(originalTag.Data)
 
-			if staticExists || dynamicExists {
-				if err := checkNoBody(originalTag); err != nil {
-					return fmt.Errorf("invalid use of component %s in %s : %s", originalTag.Data, filePath, err.Error())
+			_, componentExists := components[tag]
+			if componentExists {
+				if htmlUtilities.HasChildren(originalTag) {
+					return fmt.Errorf("invalid use of component %s in %s : component bodies are not supported", originalTag.Data, filePath)
 				}
-			}
 
-			// TODO: the logic for static and dynamic components will likely be very similar
-			// in the future, simply combine both branches,
-			// but for dynamic components just have a simple processing stage.
-			// after that its treated as a static component would be
-			if staticExists {
-				// this check ensures that each component contributes its <head> nodes at most ONCE per document
-				if _, seen := usedComponents[tag]; !seen {
-					htmlUtilities.AppendNodes(head, stcComponent.HeadNodes)
+				resolved, err := componentResolver.Resolve(tag)
+				if err != nil {
+					return fmt.Errorf("could not resolve component %s : %s", originalTag.Data, err.Error())
 				}
-				usedComponents[tag] = struct{}{}
-				if source := components[tag]; source.IsFolder {
-					usedComponentFolders[tag] = source
+				if resolved.Dynamic {
+					logger.Warning("Dynamic components are not implemented yet, skipping %s...", originalTag.Data)
+					continue
+				}
+
+				if err := contributeComponent(tag, componentResolver, head, usedComponents, usedComponentFolders); err != nil {
+					return fmt.Errorf("could not contribute component %s : %s", originalTag.Data, err.Error())
 				}
 
 				if _, isRuntimeTemplate := templates[tag]; isRuntimeTemplate {
-					if _, registered := registeredRuntimeTemplates[tag]; registered {
+					if _, registered := explicitRuntimeTemplates[tag]; registered {
 						return fmt.Errorf("runtime template component %s is registered more than once in %s", originalTag.Data, filePath)
 					}
-
-					template := &html.Node{
-						Type: html.ElementNode,
-						Data: "template",
-						Attr: []html.Attribute{{Key: "id", Val: "sklair-template-" + tag}},
-					}
-					for _, node := range stcComponent.BodyNodes {
-						template.AppendChild(htmlUtilities.Clone(node))
-					}
-					parent.InsertBefore(template, originalTag)
-					registeredRuntimeTemplates[tag] = struct{}{}
-					runtimeUsed = true
+					explicitRuntimeTemplates[tag] = struct{}{}
+					requiredRuntimeTemplates[tag] = struct{}{}
 				} else {
-					htmlUtilities.InsertNodesBefore(originalTag, stcComponent.BodyNodes)
+					htmlUtilities.InsertNodesBefore(originalTag, resolved.BodyNodes)
+				}
+				for template := range resolved.RuntimeTemplates {
+					requiredRuntimeTemplates[template] = struct{}{}
 				}
 
 				parent.RemoveChild(originalTag)
-			} else if dynamicExists {
-				if _, isRuntimeTemplate := templates[tag]; isRuntimeTemplate {
-					return fmt.Errorf("runtime template component %s is dynamic, but dynamic components are not implemented yet", originalTag.Data)
-				}
-				fmt.Println(dynComponent)
-				logger.Warning("Dynamic components are not implemented yet, skipping %s...", originalTag.Data)
-				continue
 			} else if originalTag.Data == "lua" {
 				// TODO: prints from lua will be appended to a buffer
 				// then this buffer will be parsed by html
@@ -293,6 +254,41 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 				logger.Warning("Component %s not in cache; assuming unregistered custom element and skipping...", originalTag.Data)
 				continue
 			}
+		}
+
+		if len(requiredRuntimeTemplates) > 0 {
+			templateNames := make([]string, 0, len(requiredRuntimeTemplates))
+			for name := range requiredRuntimeTemplates {
+				templateNames = append(templateNames, name)
+			}
+			sort.Strings(templateNames)
+
+			registry := &html.Node{
+				Type: html.ElementNode,
+				Data: "div",
+				Attr: []html.Attribute{
+					{Key: "id", Val: "_sklair-runtime-templates"},
+					{Key: "hidden"},
+				},
+			}
+			for _, name := range templateNames {
+				component, err := componentResolver.Resolve(name)
+				if err != nil {
+					return fmt.Errorf("could not resolve runtime template %s in %s : %s", name, filePath, err.Error())
+				}
+
+				template := &html.Node{
+					Type: html.ElementNode,
+					Data: "template",
+					Attr: []html.Attribute{{Key: "id", Val: "sklair-template-" + name}},
+				}
+				for _, node := range component.BodyNodes {
+					template.AppendChild(htmlUtilities.Clone(node))
+				}
+				registry.AppendChild(template)
+			}
+			body.AppendChild(registry)
+			runtimeUsed = true
 		}
 
 		// --------------------------------------------------

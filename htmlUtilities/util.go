@@ -44,6 +44,10 @@ func FindTag(n *html.Node, tag string) *html.Node {
 	return nil
 }
 
+func HasChildren(n *html.Node) bool {
+	return n != nil && n.FirstChild != nil
+}
+
 func InsertNodesBefore(insertBefore *html.Node, tags []*html.Node) {
 	for _, tag := range tags {
 		insertBefore.Parent.InsertBefore(Clone(tag), insertBefore)
