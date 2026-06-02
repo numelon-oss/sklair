@@ -11,32 +11,24 @@ import (
 )
 
 func contributeComponent(
-	name string,
+	component *componentInstance,
 	resolver *componentResolver,
 	head *html.Node,
 	used map[string]struct{},
 	usedFolders map[string]discovery.ComponentSource,
-) error {
-	if _, exists := used[name]; exists {
-		return nil
+) {
+	if _, exists := used[component.Key]; exists {
+		return
 	}
-	used[name] = struct{}{}
-
-	component, err := resolver.Resolve(name)
-	if err != nil {
-		return err
-	}
+	used[component.Key] = struct{}{}
 	for _, dependency := range component.Dependencies {
-		if err := contributeComponent(dependency, resolver, head, used, usedFolders); err != nil {
-			return err
-		}
+		contributeComponent(dependency, resolver, head, used, usedFolders)
 	}
 
 	htmlUtilities.AppendNodes(head, component.HeadNodes)
-	if source := resolver.sources[name]; source.IsFolder {
-		usedFolders[name] = source
+	if source := resolver.sources[component.Name]; source.IsFolder {
+		usedFolders[component.Name] = source
 	}
-	return nil
 }
 
 func copyComponentFolders(componentsDir string, outputDir string, components map[string]discovery.ComponentSource) error {

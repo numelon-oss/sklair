@@ -48,6 +48,56 @@ func HasChildren(n *html.Node) bool {
 	return n != nil && n.FirstChild != nil
 }
 
+func SetAttribute(node *html.Node, name string, value string) {
+	for i := range node.Attr {
+		if node.Attr[i].Key == name {
+			node.Attr[i].Val = value
+			return
+		}
+	}
+	node.Attr = append(node.Attr, html.Attribute{Key: name, Val: value})
+}
+
+func RemoveAttribute(node *html.Node, name string) {
+	attributes := node.Attr[:0]
+	for _, attribute := range node.Attr {
+		if attribute.Key != name {
+			attributes = append(attributes, attribute)
+		}
+	}
+	node.Attr = attributes
+}
+
+func ToggleClass(node *html.Node, name string, enabled bool) {
+	classes := make([]string, 0)
+	for _, attribute := range node.Attr {
+		if attribute.Key == "class" {
+			classes = strings.Fields(attribute.Val)
+			break
+		}
+	}
+
+	found := false
+	filtered := classes[:0]
+	for _, class := range classes {
+		if class == name {
+			found = true
+			if !enabled {
+				continue
+			}
+		}
+		filtered = append(filtered, class)
+	}
+	if enabled && !found {
+		filtered = append(filtered, name)
+	}
+	if len(filtered) == 0 {
+		RemoveAttribute(node, "class")
+		return
+	}
+	SetAttribute(node, "class", strings.Join(filtered, " "))
+}
+
 func InsertNodesBefore(insertBefore *html.Node, tags []*html.Node) {
 	for _, tag := range tags {
 		insertBefore.Parent.InsertBefore(Clone(tag), insertBefore)

@@ -167,12 +167,6 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 						continue
 					}
 
-					if componentResolver.states[tag] == componentUnseen {
-						logger.Info("Processing and resolving tag %s...", tag)
-					}
-					if _, err := componentResolver.Resolve(tag); err != nil {
-						return fmt.Errorf("could not resolve component %s : %s", tag, err.Error())
-					}
 					toReplace = append(toReplace, node)
 				}
 			}
@@ -193,7 +187,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		// their <head> nodes and folder assets at most once per document
 		usedComponents := make(map[string]struct{})
 		explicitRuntimeTemplates := make(map[string]struct{})
-		requiredRuntimeTemplates := make(map[string]struct{})
+		requiredRuntimeTemplates := make(map[string]*componentInstance)
 		for _, originalTag := range toReplace {
 			tag := strings.ToLower(originalTag.Data)
 
@@ -210,7 +204,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 					return fmt.Errorf("invalid use of component %s in %s : component bodies are not supported", originalTag.Data, filePath)
 				}
 
-				resolved, err := componentResolver.Resolve(tag)
+				resolved, err := componentResolver.Instantiate(tag, originalTag.Attr)
 				if err != nil {
 					return fmt.Errorf("could not resolve component %s : %s", originalTag.Data, err.Error())
 				}
@@ -219,21 +213,21 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 					continue
 				}
 
-				if err := contributeComponent(tag, componentResolver, head, usedComponents, usedComponentFolders); err != nil {
-					return fmt.Errorf("could not contribute component %s : %s", originalTag.Data, err.Error())
-				}
+				contributeComponent(resolved, componentResolver, head, usedComponents, usedComponentFolders)
 
 				if _, isRuntimeTemplate := templates[tag]; isRuntimeTemplate {
 					if _, registered := explicitRuntimeTemplates[tag]; registered {
 						return fmt.Errorf("runtime template component %s is registered more than once in %s", originalTag.Data, filePath)
 					}
 					explicitRuntimeTemplates[tag] = struct{}{}
-					requiredRuntimeTemplates[tag] = struct{}{}
+					if err := addTemplate(requiredRuntimeTemplates, resolved); err != nil {
+						return fmt.Errorf("could not register runtime template %s in %s : %s", originalTag.Data, filePath, err.Error())
+					}
 				} else {
 					htmlUtilities.InsertNodesBefore(originalTag, resolved.BodyNodes)
 				}
-				for template := range resolved.RuntimeTemplates {
-					requiredRuntimeTemplates[template] = struct{}{}
+				if err := mergeTemplates(requiredRuntimeTemplates, resolved.RuntimeTemplates); err != nil {
+					return fmt.Errorf("could not register runtime template dependency in %s : %s", filePath, err.Error())
 				}
 
 				parent.RemoveChild(originalTag)
@@ -272,10 +266,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 				},
 			}
 			for _, name := range templateNames {
-				component, err := componentResolver.Resolve(name)
-				if err != nil {
-					return fmt.Errorf("could not resolve runtime template %s in %s : %s", name, filePath, err.Error())
-				}
+				component := requiredRuntimeTemplates[name]
 
 				template := &html.Node{
 					Type: html.ElementNode,

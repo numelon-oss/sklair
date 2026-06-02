@@ -6,25 +6,22 @@ import (
 	"sklair/caching"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
+	"sort"
 	"strings"
 
 	"github.com/numelon-oss/go-logger"
 	"golang.org/x/net/html"
 )
 
-type componentResolveState uint8
-
-const (
-	componentUnseen componentResolveState = iota
-	componentVisiting
-	componentResolved
-)
-
-type resolvedComponent struct {
+type componentInstance struct {
+	Name             string
+	Key              string
+	Props            string
+	Path             []string
 	HeadNodes        []*html.Node
 	BodyNodes        []*html.Node
-	Dependencies     []string
-	RuntimeTemplates map[string]struct{}
+	Dependencies     []*componentInstance
+	RuntimeTemplates map[string]*componentInstance
 	Dynamic          bool
 }
 
@@ -32,11 +29,7 @@ type componentResolver struct {
 	componentsDir string
 	sources       map[string]discovery.ComponentSource
 	templates     map[string]struct{}
-
-	rawCache caching.ComponentCache
-	resolved map[string]*resolvedComponent
-	states   map[string]componentResolveState
-	stack    []string
+	rawCache      caching.ComponentCache
 }
 
 func newComponentResolver(componentsDir string, sources map[string]discovery.ComponentSource, templates map[string]struct{}) *componentResolver {
@@ -48,58 +41,57 @@ func newComponentResolver(componentsDir string, sources map[string]discovery.Com
 			Static:  make(map[string]*caching.Component),
 			Dynamic: make(map[string]*caching.Component),
 		},
-		resolved: make(map[string]*resolvedComponent),
-		states:   make(map[string]componentResolveState),
 	}
 }
 
-func (r *componentResolver) Resolve(name string) (*resolvedComponent, error) {
-	name = strings.ToLower(name)
+func (r *componentResolver) Instantiate(name string, attributes []html.Attribute) (*componentInstance, error) {
+	return r.instantiate(strings.ToLower(name), attributes, nil)
+}
 
-	switch r.states[name] {
-	case componentResolved:
-		return r.resolved[name], nil
-	case componentVisiting:
-		return nil, r.circularDepErr(name)
+func (r *componentResolver) instantiate(name string, attributes []html.Attribute, stack []string) (*componentInstance, error) {
+	for _, ancestor := range stack {
+		if ancestor == name {
+			return nil, circularDepErr(stack, name)
+		}
 	}
 
 	source, exists := r.sources[name]
 	if !exists {
 		return nil, fmt.Errorf("component %q does not exist", name)
 	}
-
-	r.states[name] = componentVisiting
-	r.stack = append(r.stack, name)
-	succeeded := false
-	defer func() {
-		r.stack = r.stack[:len(r.stack)-1]
-		if !succeeded {
-			r.states[name] = componentUnseen
-		}
-	}()
-
 	raw, err := r.loadRaw(name, source)
 	if err != nil {
 		return nil, err
 	}
 
-	resolved := &resolvedComponent{
-		HeadNodes:        make([]*html.Node, 0, len(raw.HeadNodes)),
-		RuntimeTemplates: make(map[string]struct{}),
-		Dynamic:          raw.Dynamic,
-	}
+	head := &html.Node{Type: html.DocumentNode}
 	for _, node := range raw.HeadNodes {
-		resolved.HeadNodes = append(resolved.HeadNodes, htmlUtilities.Clone(node))
+		head.AppendChild(htmlUtilities.Clone(node))
 	}
-
 	body := &html.Node{Type: html.DocumentNode}
 	for _, node := range raw.BodyNodes {
 		body.AppendChild(htmlUtilities.Clone(node))
 	}
 
+	allNodes := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
+	props, err := bind(allNodes, attributes)
+	if err != nil {
+		return nil, fmt.Errorf("could not bind component %s : %s", name, err.Error())
+	}
+
+	instance := &componentInstance{
+		Name:             name,
+		Key:              name + "\x00" + props.signature,
+		Props:            props.description,
+		Path:             append(append([]string{}, stack...), name),
+		HeadNodes:        htmlUtilities.GetAllChildren(head),
+		RuntimeTemplates: make(map[string]*componentInstance),
+		Dynamic:          raw.Dynamic,
+	}
+
 	if source.IsFolder {
 		outputDir := "/_sklair/components/" + name
-		if err := resources.RewriteURLs(resolved.HeadNodes, outputDir); err != nil {
+		if err := resources.RewriteURLs(instance.HeadNodes, outputDir); err != nil {
 			return nil, fmt.Errorf("could not rewrite component %s head resource URLs : %s", source.Entry(), err.Error())
 		}
 		if err := resources.RewriteURLs(htmlUtilities.GetAllChildren(body), outputDir); err != nil {
@@ -107,6 +99,7 @@ func (r *componentResolver) Resolve(name string) (*resolvedComponent, error) {
 		}
 	}
 
+	stack = append(stack, name)
 	var invocations []*html.Node
 	for node := range body.Descendants() {
 		if node.Type != html.ElementNode {
@@ -117,60 +110,50 @@ func (r *componentResolver) Resolve(name string) (*resolvedComponent, error) {
 		if htmlUtilities.HtmlTags[tag] || tag == "lua" || tag == "opengraph" {
 			continue
 		}
-
 		if _, exists := r.sources[tag]; !exists {
 			logger.Warning("Non-standard tag found in component %s and no component present : %s; assuming Autonomous Custom Element", name, tag)
 			continue
 		}
-
 		invocations = append(invocations, node)
 	}
 
-	dependencySeen := make(map[string]struct{})
-	explicitTemplateSeen := make(map[string]struct{})
+	explicitTemplates := make(map[string]struct{})
 	for _, invocation := range invocations {
 		if htmlUtilities.HasChildren(invocation) {
 			return nil, fmt.Errorf("invalid use of component %s inside %s : component bodies are not supported", invocation.Data, name)
 		}
 
 		dependencyName := strings.ToLower(invocation.Data)
-		dependency, err := r.Resolve(dependencyName)
+		dependency, err := r.instantiate(dependencyName, invocation.Attr, stack)
 		if err != nil {
 			return nil, err
 		}
+		instance.Dependencies = append(instance.Dependencies, dependency)
 
-		_, isRuntimeTemplate := r.templates[dependencyName]
-		if _, seen := dependencySeen[dependencyName]; !seen {
-			resolved.Dependencies = append(resolved.Dependencies, dependencyName)
-			dependencySeen[dependencyName] = struct{}{}
-		}
-
-		if isRuntimeTemplate {
-			if _, exists := explicitTemplateSeen[dependencyName]; exists {
+		if _, isRuntimeTemplate := r.templates[dependencyName]; isRuntimeTemplate {
+			if _, exists := explicitTemplates[dependencyName]; exists {
 				return nil, fmt.Errorf("runtime template component %s is registered more than once inside %s", invocation.Data, name)
 			}
-			explicitTemplateSeen[dependencyName] = struct{}{}
-			resolved.RuntimeTemplates[dependencyName] = struct{}{}
+			explicitTemplates[dependencyName] = struct{}{}
+			if err := addTemplate(instance.RuntimeTemplates, dependency); err != nil {
+				return nil, err
+			}
 		} else {
 			htmlUtilities.InsertNodesBefore(invocation, dependency.BodyNodes)
 		}
-		for template := range dependency.RuntimeTemplates {
-			resolved.RuntimeTemplates[template] = struct{}{}
+		if err := mergeTemplates(instance.RuntimeTemplates, dependency.RuntimeTemplates); err != nil {
+			return nil, err
 		}
 
-		resolved.Dynamic = resolved.Dynamic || dependency.Dynamic
+		instance.Dynamic = instance.Dynamic || dependency.Dynamic
 		invocation.Parent.RemoveChild(invocation)
 	}
 
-	resolved.BodyNodes = htmlUtilities.GetAllChildren(body)
-	if _, isRuntimeTemplate := r.templates[name]; isRuntimeTemplate && resolved.Dynamic {
+	instance.BodyNodes = htmlUtilities.GetAllChildren(body)
+	if _, isRuntimeTemplate := r.templates[name]; isRuntimeTemplate && instance.Dynamic {
 		return nil, fmt.Errorf("runtime template component %s is dynamic, but dynamic components are not implemented yet", name)
 	}
-
-	r.resolved[name] = resolved
-	r.states[name] = componentResolved
-	succeeded = true
-	return resolved, nil
+	return instance, nil
 }
 
 func (r *componentResolver) loadRaw(name string, source discovery.ComponentSource) (*caching.Component, error) {
@@ -181,6 +164,7 @@ func (r *componentResolver) loadRaw(name string, source discovery.ComponentSourc
 		return component, nil
 	}
 
+	logger.Info("Processing and caching tag %s...", name)
 	component, err := caching.MakeCache(r.componentsDir, source.Entry())
 	if err != nil {
 		return nil, fmt.Errorf("could not cache component %s : %s", source.Entry(), err.Error())
@@ -194,16 +178,50 @@ func (r *componentResolver) loadRaw(name string, source discovery.ComponentSourc
 	return component, nil
 }
 
-func (r *componentResolver) circularDepErr(name string) error {
+func addTemplate(templates map[string]*componentInstance, template *componentInstance) error {
+	if previous, exists := templates[template.Name]; exists {
+		if previous.Key != template.Key {
+			return fmt.Errorf(
+				"runtime template %s is required with conflicting compile-time props %s via %s and %s via %s",
+				template.Name,
+				previous.Props,
+				strings.Join(previous.Path, " -> "),
+				template.Props,
+				strings.Join(template.Path, " -> "),
+			)
+		}
+		return nil
+	}
+
+	templates[template.Name] = template
+	return nil
+}
+
+func mergeTemplates(destination map[string]*componentInstance, source map[string]*componentInstance) error {
+	names := make([]string, 0, len(source))
+	for name := range source {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		template := source[name]
+		if err := addTemplate(destination, template); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func circularDepErr(stack []string, name string) error {
 	start := 0
-	for i, component := range r.stack {
+	for i, component := range stack {
 		if component == name {
 			start = i
 			break
 		}
 	}
 
-	cycle := append([]string{}, r.stack[start:]...)
+	cycle := append([]string{}, stack[start:]...)
 	cycle = append(cycle, name)
 	return fmt.Errorf("circular component dependency : %s", strings.Join(cycle, " -> "))
 }
