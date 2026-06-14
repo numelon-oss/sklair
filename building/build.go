@@ -33,10 +33,6 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
-	err = os.RemoveAll(inputs.paths.output)
-	if err != nil {
-		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
-	}
 	err = os.RemoveAll(inputs.paths.temp)
 	if err != nil {
 		return fmt.Errorf("could not remove Sklair's temp directory %s : %s", inputs.paths.temp, err.Error())
@@ -47,21 +43,20 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 
 	preHookStart := time.Now()
-	if inputs.hooks != nil {
-		logger.Info("Running pre-build hooks...")
-		err = hooks.RunHooks(inputs.paths.hooks, inputs.hooks.PreBuild, &luaSandbox.FSContext{
-			CacheDir:     inputs.paths.cache,
-			ProjectDir:   inputs.paths.input,
-			TempDir:      inputs.paths.temp,
-			GeneratedDir: inputs.paths.generated,
-			BuiltDir:     inputs.paths.output,
-			Mode:         luaSandbox.HookModePre,
-		})
-		if err != nil {
-			return fmt.Errorf("could not run pre-build hooks : %s", err.Error())
-		}
+	if err := runPreHooks(inputs); err != nil {
+		return err
 	}
 	preHookEnd := time.Since(preHookStart)
+
+	plan, err := planBuild(inputs)
+	if err != nil {
+		return err
+	}
+
+	err = os.RemoveAll(inputs.paths.output)
+	if err != nil {
+		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
+	}
 
 	componentResolver := newComponentResolver(inputs.paths.components, inputs.components, inputs.templates)
 	usedComponentFolders := make(map[string]discovery.ComponentSource)
@@ -79,7 +74,8 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	compilationStart := time.Now()
 
 	logger.Info("Resolving components usage and compiling...")
-	for _, filePath := range inputs.documents.HtmlFiles {
+	for _, planned := range plan.documents {
+		filePath := planned.source
 		doc, err := htmlUtilities.ParseFile(filePath)
 		if err != nil {
 			return fmt.Errorf("could not parse file %s : %s", filePath, err.Error())
@@ -290,12 +286,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return fmt.Errorf("could not render output for %s : %s", filePath, err.Error())
 		}
 
-		relPath, err := filepath.Rel(inputs.paths.input, filePath)
-		if err != nil {
-			return fmt.Errorf("could not get relative path for %s : %s", filePath, err.Error())
-		}
-
-		outPath := filepath.Join(inputs.paths.output, relPath)
+		outPath := planned.output
 		err = os.MkdirAll(filepath.Dir(outPath), 0755)
 		if err != nil {
 			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
@@ -344,13 +335,9 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	logger.Info("Copying static files...")
 
 	staticStart := time.Now()
-	for _, filePath := range inputs.documents.StaticFiles {
-		relPath, err := filepath.Rel(inputs.paths.input, filePath)
-		if err != nil {
-			return fmt.Errorf("could not get relative path for %s : %s", filePath, err.Error())
-		}
-
-		outPath := filepath.Join(inputs.paths.output, relPath)
+	for _, planned := range plan.staticFiles {
+		filePath := planned.source
+		outPath := planned.output
 		err = os.MkdirAll(filepath.Dir(outPath), 0755)
 		if err != nil {
 			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
@@ -402,8 +389,8 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	postHookEnd := time.Since(postHookStart)
 
 	//logger.EmptyLine()
-	logger.Info("Compilation (including writes) of %d files : %s", len(inputs.documents.HtmlFiles), processingEnd)
-	logger.Info("Static copy of %d files : %s", len(inputs.documents.StaticFiles), staticEnd)
+	logger.Info("Compilation (including writes) of %d files : %s", len(plan.documents), processingEnd)
+	logger.Info("Static copy of %d files : %s", len(plan.staticFiles), staticEnd)
 	if inputs.hooks != nil {
 		logger.Info("Run time of %d pre-build hooks : %s", len(inputs.hooks.PreBuild), preHookEnd)
 		logger.Info("Run time of %d post-build hooks : %s", len(inputs.hooks.PostBuild), postHookEnd)
