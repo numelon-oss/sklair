@@ -17,6 +17,21 @@ type documentState struct {
 	componentFolders map[string]discovery.ComponentSource
 }
 
+func compileDocuments(definitions *definitionSet, templates map[string]struct{}) ([]*documentState, error) {
+	resolver := newComponentResolver(definitions.components, templates)
+	documents := make([]*documentState, 0, len(definitions.documents))
+
+	for _, definition := range definitions.documents {
+		document, err := compileDocument(definition, resolver)
+		if err != nil {
+			return nil, err
+		}
+		documents = append(documents, document)
+	}
+
+	return documents, nil
+}
+
 func compileDocument(definition documentDefinition, resolver *componentResolver) (*documentState, error) {
 	doc := definition.root
 	head := htmlUtilities.FindTag(doc, "head")

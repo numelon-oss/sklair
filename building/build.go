@@ -1,13 +1,7 @@
 package building
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"sklair/building/hooks"
-	"sklair/luaSandbox"
 	"sklair/sklairConfig"
-	"sklair/util"
 	"time"
 
 	"github.com/numelon-oss/go-logger"
@@ -21,13 +15,8 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
-	err = os.RemoveAll(inputs.paths.temp)
-	if err != nil {
-		return fmt.Errorf("could not remove Sklair's temp directory %s : %s", inputs.paths.temp, err.Error())
-	}
-	err = os.RemoveAll(inputs.paths.generated)
-	if err != nil {
-		return fmt.Errorf("could not remove Sklair's generated directory %s : %s", inputs.paths.generated, err.Error())
+	if err := resetHookWorkspace(inputs.paths); err != nil {
+		return err
 	}
 
 	preHookStart := time.Now()
@@ -48,16 +37,10 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
-	componentResolver := newComponentResolver(definitions.components, inputs.templates)
-
 	logger.Info("Resolving components usage and compiling...")
-	documents := make([]*documentState, 0, len(definitions.documents))
-	for _, definition := range definitions.documents {
-		document, err := compileDocument(definition, componentResolver)
-		if err != nil {
-			return err
-		}
-		documents = append(documents, document)
+	documents, err := compileDocuments(definitions, inputs.templates)
+	if err != nil {
+		return err
 	}
 
 	logger.Info("Finalising documents...")
@@ -66,70 +49,20 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
-	err = os.RemoveAll(inputs.paths.output)
-	if err != nil {
-		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
-	}
-
-	if err := writeOutput(output, inputs.paths); err != nil {
+	if err := replaceOutput(output, inputs.paths); err != nil {
 		return err
 	}
 	processingEnd := time.Since(compilationStart)
 
-	//logger.EmptyLine()
-	logger.Info("Copying static files...")
-
 	staticStart := time.Now()
-	for _, planned := range plan.staticFiles {
-		filePath := planned.source
-		outPath := planned.output
-		err = os.MkdirAll(filepath.Dir(outPath), 0755)
-		if err != nil {
-			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
-		}
-
-		err = util.CopyFile(filePath, outPath, 0644)
-		if err != nil {
-			return fmt.Errorf("could not copy static file %s : %s", filePath, err.Error())
-		}
-
-		logger.Info("Copied static file to %s", outPath)
+	if err := copyStatic(plan.staticFiles); err != nil {
+		return err
 	}
-
 	staticEnd := time.Since(staticStart)
 
 	postHookStart := time.Now()
-	if inputs.hooks != nil {
-		buildSklairDir := filepath.Join(inputs.paths.output, "_sklair") // TODO: the _sklair directory in output is not unique to hooks, they will be used for more things in the future
-
-		isEmpty, err := util.IsDirEmpty(inputs.paths.generated)
-		if err != nil {
-			exist := os.IsExist(err)
-			if exist {
-				return fmt.Errorf("could not check if generated directory is empty : %s", err.Error())
-			} else {
-				isEmpty = true
-			}
-		}
-		if !isEmpty {
-			err = util.CopyDir(inputs.paths.generated, buildSklairDir)
-			if err != nil {
-				return fmt.Errorf("could not copy generated files to Sklair's namespace : %s", err.Error())
-			}
-		}
-
-		logger.Info("Running post-build hooks...")
-		err = hooks.RunHooks(inputs.paths.hooks, inputs.hooks.PostBuild, &luaSandbox.FSContext{
-			CacheDir:     inputs.paths.cache,
-			ProjectDir:   inputs.paths.input,
-			TempDir:      inputs.paths.temp,
-			GeneratedDir: buildSklairDir,
-			BuiltDir:     inputs.paths.output,
-			Mode:         luaSandbox.HookModePost,
-		})
-		if err != nil {
-			return fmt.Errorf("could not run post-build hooks : %s", err.Error())
-		}
+	if err := runPostHooks(inputs); err != nil {
+		return err
 	}
 	postHookEnd := time.Since(postHookStart)
 

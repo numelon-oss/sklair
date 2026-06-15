@@ -168,7 +168,11 @@ func finaliseDocuments(documents []*documentState, config *sklairConfig.ProjectC
 	return output, nil
 }
 
-func writeOutput(output *buildOutput, paths buildPaths) error {
+func replaceOutput(output *buildOutput, paths buildPaths) error {
+	if err := os.RemoveAll(paths.output); err != nil {
+		return fmt.Errorf("could not remove output directory %s : %s", paths.output, err.Error())
+	}
+
 	for _, document := range output.documents {
 		if err := os.MkdirAll(filepath.Dir(document.output), 0755); err != nil {
 			return fmt.Errorf("could not create output directory for %s : %s", document.source, err.Error())
