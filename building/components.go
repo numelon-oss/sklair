@@ -6,6 +6,7 @@ import (
 	"sklair/discovery"
 	"sklair/htmlUtilities"
 	"sklair/util"
+	"sort"
 
 	"golang.org/x/net/html"
 )
@@ -32,7 +33,14 @@ func contributeComponent(
 }
 
 func copyComponentFolders(componentsDir string, outputDir string, components map[string]discovery.ComponentSource) error {
-	for tag, component := range components {
+	names := make([]string, 0, len(components))
+	for name := range components {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+
+	for _, tag := range names {
+		component := components[tag]
 		source := filepath.Join(componentsDir, component.AssetDir())
 		destination := filepath.Join(outputDir, "_sklair", "components", tag)
 		if err := util.CopyDir(source, destination); err != nil {

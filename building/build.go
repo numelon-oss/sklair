@@ -1,27 +1,16 @@
 package building
 
 import (
-	"bytes"
-	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
 	"sklair/building/hooks"
-	"sklair/building/priorities"
-	"sklair/devserver"
-	"sklair/discovery"
-	"sklair/htmlUtilities"
 	"sklair/luaSandbox"
-	sklairRuntime "sklair/runtime"
 	"sklair/sklairConfig"
-	"sklair/snippets"
 	"sklair/util"
-	"sort"
 	"time"
 
 	"github.com/numelon-oss/go-logger"
-
-	"golang.org/x/net/html"
 )
 
 func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverride string) error {
@@ -60,7 +49,6 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 
 	componentResolver := newComponentResolver(definitions.components, inputs.templates)
-	usedComponentFolders := make(map[string]discovery.ComponentSource)
 
 	logger.Info("Resolving components usage and compiling...")
 	documents := make([]*documentState, 0, len(definitions.documents))
@@ -70,18 +58,12 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return err
 		}
 		documents = append(documents, document)
-		for name, source := range document.componentFolders {
-			usedComponentFolders[name] = source
-		}
 	}
 
-	var preventFoucHead *html.Node
-	var preventFoucBody *html.Node
-	if config.PreventFOUC != nil && config.PreventFOUC.Enabled {
-		preventFoucHead, preventFoucBody, err = snippets.GetFOUCNodes(config.PreventFOUC.Colour)
-		if err != nil {
-			return errors.New("could not get PreventFOUC nodes : " + err.Error())
-		}
+	logger.Info("Finalising documents...")
+	output, err := finaliseDocuments(documents, config, outputDirOverride != "")
+	if err != nil {
+		return err
 	}
 
 	err = os.RemoveAll(inputs.paths.output)
@@ -89,163 +71,10 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
 	}
 
-	runtimeUsed := false
-	for _, document := range documents {
-		filePath := document.source
-		doc := document.root
-		head := htmlUtilities.FindTag(doc, "head")
-		body := htmlUtilities.FindTag(doc, "body")
-		requiredRuntimeTemplates := document.templates
-
-		if len(requiredRuntimeTemplates) > 0 {
-			templateNames := make([]string, 0, len(requiredRuntimeTemplates))
-			for name := range requiredRuntimeTemplates {
-				templateNames = append(templateNames, name)
-			}
-			sort.Strings(templateNames)
-
-			registry := &html.Node{
-				Type: html.ElementNode,
-				Data: "div",
-				Attr: []html.Attribute{
-					{Key: "id", Val: "_sklair-runtime-templates"},
-					{Key: "hidden"},
-				},
-			}
-			for _, name := range templateNames {
-				component := requiredRuntimeTemplates[name]
-
-				template := &html.Node{
-					Type: html.ElementNode,
-					Data: "template",
-					Attr: []html.Attribute{{Key: "id", Val: "sklair-template-" + name}},
-				}
-				for _, node := range component.BodyNodes {
-					template.AppendChild(htmlUtilities.Clone(node))
-				}
-				registry.AppendChild(template)
-			}
-			body.AppendChild(registry)
-			runtimeUsed = true
-		}
-
-		// --------------------------------------------------
-		// resource hints
-		// --------------------------------------------------
-
-		// TODO: if google found in link rel for google fonts, then add preconnect for fonts.gstatic.com
-		// basically for known preconnects
-
-		// cap preconnect to 6 origins
-		// warn if more than 6 and consider self hosting some assets
-		// ensure google fonts is cross origin
-		// todo image srcset
-		// https://developer.mozilla.org/en-US/docs/Web/HTML/Reference/Attributes/rel/preconnect
-		//origins := make(map[string]int)
-		//if config.ResourceHints != nil && config.ResourceHints.Enabled {
-		//	for node := range doc.Descendants() {
-		//		if node.Type == html.ElementNode {
-		//
-		//		}
-		//	}
-		//}
-
-		// --------------------------------------------------
-		// head segmentation and optimisation
-		// --------------------------------------------------
-		segmentedHead, err := SegmentHead(head)
-		if err != nil {
-			return fmt.Errorf("could not segment <head> in %s : %s", filePath, err.Error())
-		}
-
-		if config.PreventFOUC != nil && config.PreventFOUC.Enabled {
-			segmentedHead = append(segmentedHead, &HeadSegment{
-				Nodes:             []*html.Node{htmlUtilities.Clone(preventFoucHead)},
-				TreatAsTag:        priorities.PreventFOUC,
-				IsOrderingBarrier: false,
-			})
-
-			body.AppendChild(htmlUtilities.Clone(preventFoucBody))
-		}
-
-		// TODO: remove this (generator) in the future or add an option in sklair.json to disable it
-		segmentedHead = append(segmentedHead, &HeadSegment{
-			Nodes:             []*html.Node{htmlUtilities.Clone(snippets.Generator)},
-			TreatAsTag:        priorities.Generator,
-			IsOrderingBarrier: false,
-		})
-
-		if outputDirOverride != "" {
-			// sklair dev server refresh with websocket
-			segmentedHead = append(segmentedHead, &HeadSegment{
-				Nodes: []*html.Node{
-					htmlUtilities.Clone(devserver.WSScriptNode),
-				},
-				TreatAsTag:        priorities.Script,
-				IsOrderingBarrier: false,
-			})
-		}
-
-		segmentedHead = OptimiseHead(segmentedHead)
-
-		// put the segmented head back into the document head
-		htmlUtilities.RemoveAllChildren(head)
-		for _, seg := range segmentedHead {
-			for _, node := range seg.Nodes {
-				head.AppendChild(node) // no need to clone because everything was either already cloned before, OR is already from the same document
-			}
-		}
-
-		newWriter := bytes.NewBuffer(nil)
-		err = html.Render(newWriter, doc)
-		if err != nil {
-			return fmt.Errorf("could not render output for %s : %s", filePath, err.Error())
-		}
-
-		outPath := document.output
-		err = os.MkdirAll(filepath.Dir(outPath), 0755)
-		if err != nil {
-			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
-		}
-
-		err = os.WriteFile(outPath, newWriter.Bytes(), 0644)
-		if err != nil {
-			return fmt.Errorf("could not write output for %s : %s", filePath, err.Error())
-		}
-
-		logger.Info("Saved to %s", outPath)
+	if err := writeOutput(output, inputs.paths); err != nil {
+		return err
 	}
-
 	processingEnd := time.Since(compilationStart)
-
-	if len(usedComponentFolders) > 0 {
-		logger.Info("Copying component assets...")
-		if err := copyComponentFolders(inputs.paths.components, inputs.paths.output, usedComponentFolders); err != nil {
-			return err
-		}
-	}
-
-	if runtimeUsed {
-		path := filepath.Join(inputs.paths.output, filepath.FromSlash(sklairRuntime.OutputPath))
-		if err := os.MkdirAll(filepath.Dir(path), 0755); err != nil {
-			return fmt.Errorf("could not create Sklair runtime directory : %s", err.Error())
-		}
-		if err := os.WriteFile(path, []byte(sklairRuntime.Module), 0644); err != nil {
-			return fmt.Errorf("could not write Sklair runtime module : %s", err.Error())
-		}
-	}
-
-	if outputDirOverride != "" {
-		err = os.MkdirAll(filepath.Join(inputs.paths.output, "_sklair"), 0755)
-		if err != nil {
-			return fmt.Errorf("could not create sklair dev server directory : %s", err.Error())
-		}
-
-		err := os.WriteFile(filepath.Join(inputs.paths.output, devserver.WSDevScriptPath), []byte(devserver.WSDevScript), 0644)
-		if err != nil {
-			return fmt.Errorf("could not write sklair dev server websocket js file : %s", err.Error())
-		}
-	}
 
 	//logger.EmptyLine()
 	logger.Info("Copying static files...")
