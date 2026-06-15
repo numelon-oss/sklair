@@ -53,12 +53,19 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
+	compilationStart := time.Now()
+	logger.Info("Preparing document definitions...")
+	definitions, err := prepareDefinitions(inputs, plan)
+	if err != nil {
+		return err
+	}
+
 	err = os.RemoveAll(inputs.paths.output)
 	if err != nil {
 		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
 	}
 
-	componentResolver := newComponentResolver(inputs.paths.components, inputs.components, inputs.templates)
+	componentResolver := newComponentResolver(definitions.components, inputs.templates)
 	usedComponentFolders := make(map[string]discovery.ComponentSource)
 	runtimeUsed := false
 
@@ -71,15 +78,10 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		}
 	}
 
-	compilationStart := time.Now()
-
 	logger.Info("Resolving components usage and compiling...")
-	for _, planned := range plan.documents {
-		filePath := planned.source
-		doc, err := htmlUtilities.ParseFile(filePath)
-		if err != nil {
-			return fmt.Errorf("could not parse file %s : %s", filePath, err.Error())
-		}
+	for _, definition := range definitions.documents {
+		filePath := definition.source
+		doc := definition.root
 
 		var toReplace []*html.Node
 
@@ -286,7 +288,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return fmt.Errorf("could not render output for %s : %s", filePath, err.Error())
 		}
 
-		outPath := planned.output
+		outPath := definition.output
 		err = os.MkdirAll(filepath.Dir(outPath), 0755)
 		if err != nil {
 			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())

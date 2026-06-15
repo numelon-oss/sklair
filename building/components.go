@@ -26,7 +26,7 @@ func contributeComponent(
 	}
 
 	htmlUtilities.AppendNodes(head, component.HeadNodes)
-	if source := resolver.sources[component.Name]; source.IsFolder {
+	if source := resolver.definitions.sources[component.Name]; source.IsFolder {
 		usedFolders[component.Name] = source
 	}
 }

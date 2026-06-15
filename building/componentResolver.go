@@ -3,8 +3,6 @@ package building
 import (
 	"fmt"
 	"sklair/building/resources"
-	"sklair/caching"
-	"sklair/discovery"
 	"sklair/htmlUtilities"
 	"sort"
 	"strings"
@@ -26,21 +24,14 @@ type componentInstance struct {
 }
 
 type componentResolver struct {
-	componentsDir string
-	sources       map[string]discovery.ComponentSource
-	templates     map[string]struct{}
-	rawCache      caching.ComponentCache
+	definitions *componentDefinitions
+	templates   map[string]struct{}
 }
 
-func newComponentResolver(componentsDir string, sources map[string]discovery.ComponentSource, templates map[string]struct{}) *componentResolver {
+func newComponentResolver(definitions *componentDefinitions, templates map[string]struct{}) *componentResolver {
 	return &componentResolver{
-		componentsDir: componentsDir,
-		sources:       sources,
-		templates:     templates,
-		rawCache: caching.ComponentCache{
-			Static:  make(map[string]*caching.Component),
-			Dynamic: make(map[string]*caching.Component),
-		},
+		definitions: definitions,
+		templates:   templates,
 	}
 }
 
@@ -55,21 +46,17 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		}
 	}
 
-	source, exists := r.sources[name]
-	if !exists {
-		return nil, fmt.Errorf("component %q does not exist", name)
-	}
-	raw, err := r.loadRaw(name, source)
+	definition, source, err := r.definitions.prepare(name)
 	if err != nil {
 		return nil, err
 	}
 
 	head := &html.Node{Type: html.DocumentNode}
-	for _, node := range raw.HeadNodes {
+	for _, node := range definition.head {
 		head.AppendChild(htmlUtilities.Clone(node))
 	}
 	body := &html.Node{Type: html.DocumentNode}
-	for _, node := range raw.BodyNodes {
+	for _, node := range definition.body {
 		body.AppendChild(htmlUtilities.Clone(node))
 	}
 
@@ -86,7 +73,7 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		Path:             append(append([]string{}, stack...), name),
 		HeadNodes:        htmlUtilities.GetAllChildren(head),
 		RuntimeTemplates: make(map[string]*componentInstance),
-		Dynamic:          raw.Dynamic,
+		Dynamic:          definition.dynamic,
 	}
 
 	if source.IsFolder {
@@ -110,7 +97,7 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		if htmlUtilities.HtmlTags[tag] || tag == "lua" || tag == "opengraph" {
 			continue
 		}
-		if _, exists := r.sources[tag]; !exists {
+		if _, exists := r.definitions.sources[tag]; !exists {
 			logger.Warning("Non-standard tag found in component %s and no component present : %s; assuming Autonomous Custom Element", name, tag)
 			continue
 		}
@@ -154,28 +141,6 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		return nil, fmt.Errorf("runtime template component %s is dynamic, but dynamic components are not implemented yet", name)
 	}
 	return instance, nil
-}
-
-func (r *componentResolver) loadRaw(name string, source discovery.ComponentSource) (*caching.Component, error) {
-	if component, exists := r.rawCache.Static[name]; exists {
-		return component, nil
-	}
-	if component, exists := r.rawCache.Dynamic[name]; exists {
-		return component, nil
-	}
-
-	logger.Info("Processing and caching tag %s...", name)
-	component, err := caching.MakeCache(r.componentsDir, source.Entry())
-	if err != nil {
-		return nil, fmt.Errorf("could not cache component %s : %s", source.Entry(), err.Error())
-	}
-
-	if component.Dynamic {
-		r.rawCache.Dynamic[name] = component
-	} else {
-		r.rawCache.Static[name] = component
-	}
-	return component, nil
 }
 
 func addTemplate(templates map[string]*componentInstance, template *componentInstance) error {
