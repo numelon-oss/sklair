@@ -17,7 +17,6 @@ import (
 	"sklair/snippets"
 	"sklair/util"
 	"sort"
-	"strings"
 	"time"
 
 	"github.com/numelon-oss/go-logger"
@@ -60,14 +59,21 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		return err
 	}
 
-	err = os.RemoveAll(inputs.paths.output)
-	if err != nil {
-		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
-	}
-
 	componentResolver := newComponentResolver(definitions.components, inputs.templates)
 	usedComponentFolders := make(map[string]discovery.ComponentSource)
-	runtimeUsed := false
+
+	logger.Info("Resolving components usage and compiling...")
+	documents := make([]*documentState, 0, len(definitions.documents))
+	for _, definition := range definitions.documents {
+		document, err := compileDocument(definition, componentResolver)
+		if err != nil {
+			return err
+		}
+		documents = append(documents, document)
+		for name, source := range document.componentFolders {
+			usedComponentFolders[name] = source
+		}
+	}
 
 	var preventFoucHead *html.Node
 	var preventFoucBody *html.Node
@@ -78,110 +84,18 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 		}
 	}
 
-	logger.Info("Resolving components usage and compiling...")
-	for _, definition := range definitions.documents {
-		filePath := definition.source
-		doc := definition.root
+	err = os.RemoveAll(inputs.paths.output)
+	if err != nil {
+		return fmt.Errorf("could not remove output directory %s : %s", inputs.paths.output, err.Error())
+	}
 
-		var toReplace []*html.Node
-
-		for node := range doc.Descendants() {
-			if node.Type == html.ElementNode {
-				tag := strings.ToLower(node.Data)
-
-				if !htmlUtilities.HtmlTags[tag] {
-					if tag == "lua" || tag == "opengraph" {
-						toReplace = append(toReplace, node)
-						continue
-					}
-
-					if _, exists := inputs.components[tag]; !exists {
-						logger.Warning("Non-standard tag found in HTML and no component present : %s; assuming Autonomous Custom Element", tag)
-						continue
-					}
-
-					toReplace = append(toReplace, node)
-				}
-			}
-		}
-
-		// TODO: in the future, hash component file contents and construct local cache in .sklair directory
-		// but how would we "cache" a html.Node struct?? lol
-
-		logger.Info("Found %d tags to replace in %s", len(toReplace), filePath)
-
+	runtimeUsed := false
+	for _, document := range documents {
+		filePath := document.source
+		doc := document.root
 		head := htmlUtilities.FindTag(doc, "head")
 		body := htmlUtilities.FindTag(doc, "body")
-		if head == nil || body == nil {
-			return fmt.Errorf("could not find head or body tags in %s, how does that even happen", filePath)
-		}
-
-		// usedComponents ensures each component and its recursive dependencies contribute
-		// their <head> nodes and folder assets at most once per document
-		usedComponents := make(map[string]struct{})
-		explicitRuntimeTemplates := make(map[string]struct{})
-		requiredRuntimeTemplates := make(map[string]*componentInstance)
-		for _, originalTag := range toReplace {
-			tag := strings.ToLower(originalTag.Data)
-
-			parent := originalTag.Parent
-			if parent == nil {
-				return fmt.Errorf("somehow the parent does not exist for %s. (memory corruption???)", originalTag.Data)
-			}
-
-			//fmt.Println(originalTag.Data)
-
-			_, componentExists := inputs.components[tag]
-			if componentExists {
-				if htmlUtilities.HasChildren(originalTag) {
-					return fmt.Errorf("invalid use of component %s in %s : component bodies are not supported", originalTag.Data, filePath)
-				}
-
-				resolved, err := componentResolver.Instantiate(tag, originalTag.Attr)
-				if err != nil {
-					return fmt.Errorf("could not resolve component %s : %s", originalTag.Data, err.Error())
-				}
-				if resolved.Dynamic {
-					logger.Warning("Dynamic components are not implemented yet, skipping %s...", originalTag.Data)
-					continue
-				}
-
-				contributeComponent(resolved, componentResolver, head, usedComponents, usedComponentFolders)
-
-				if _, isRuntimeTemplate := inputs.templates[tag]; isRuntimeTemplate {
-					if _, registered := explicitRuntimeTemplates[tag]; registered {
-						return fmt.Errorf("runtime template component %s is registered more than once in %s", originalTag.Data, filePath)
-					}
-					explicitRuntimeTemplates[tag] = struct{}{}
-					if err := addTemplate(requiredRuntimeTemplates, resolved); err != nil {
-						return fmt.Errorf("could not register runtime template %s in %s : %s", originalTag.Data, filePath, err.Error())
-					}
-				} else {
-					htmlUtilities.InsertNodesBefore(originalTag, resolved.BodyNodes)
-				}
-				if err := mergeTemplates(requiredRuntimeTemplates, resolved.RuntimeTemplates); err != nil {
-					return fmt.Errorf("could not register runtime template dependency in %s : %s", filePath, err.Error())
-				}
-
-				parent.RemoveChild(originalTag)
-			} else if originalTag.Data == "lua" {
-				// TODO: prints from lua will be appended to a buffer
-				// then this buffer will be parsed by html
-				// then this will be inserted into document
-				// TODO: or should we actually instead expose a library eg `sklair` and we can do `sklair.put()`? thats probably cleaner
-				// and also easier to implement
-				logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
-				continue
-			} else if originalTag.Data == "opengraph" {
-				for _, child := range snippets.OpenGraph(originalTag) {
-					head.AppendChild(child)
-				}
-				parent.RemoveChild(originalTag)
-			} else {
-				logger.Warning("Component %s not in cache; assuming unregistered custom element and skipping...", originalTag.Data)
-				continue
-			}
-		}
+		requiredRuntimeTemplates := document.templates
 
 		if len(requiredRuntimeTemplates) > 0 {
 			templateNames := make([]string, 0, len(requiredRuntimeTemplates))
@@ -288,7 +202,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 			return fmt.Errorf("could not render output for %s : %s", filePath, err.Error())
 		}
 
-		outPath := definition.output
+		outPath := document.output
 		err = os.MkdirAll(filepath.Dir(outPath), 0755)
 		if err != nil {
 			return fmt.Errorf("could not create output directory for %s : %s", filePath, err.Error())
