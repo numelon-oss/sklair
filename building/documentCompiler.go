@@ -40,30 +40,6 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 		return nil, fmt.Errorf("could not find head or body tags in %s, how does that even happen", definition.source)
 	}
 
-	var invocations []*html.Node
-	for node := range doc.Descendants() {
-		if node.Type != html.ElementNode {
-			continue
-		}
-
-		tag := strings.ToLower(node.Data)
-		if htmlUtilities.HtmlTags[tag] {
-			continue
-		}
-		if tag == "lua" || tag == "opengraph" {
-			invocations = append(invocations, node)
-			continue
-		}
-		if _, exists := resolver.definitions.sources[tag]; !exists {
-			logger.Warning("Non-standard tag found in HTML and no component present : %s; assuming Autonomous Custom Element", tag)
-			continue
-		}
-
-		invocations = append(invocations, node)
-	}
-
-	logger.Info("Found %d tags to replace in %s", len(invocations), definition.source)
-
 	state := &documentState{
 		documentDefinition: definition,
 		templates:          make(map[string]*componentInstance),
@@ -74,25 +50,70 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 	// their <head> nodes and folder assets at most once per document
 	usedComponents := make(map[string]struct{})
 	explicitTemplates := make(map[string]struct{})
-	for _, invocation := range invocations {
-		tag := strings.ToLower(invocation.Data)
+	count := 0
+	if err := compileDocumentNodes(doc, head, definition.source, resolver, state, usedComponents, explicitTemplates, &count); err != nil {
+		return nil, err
+	}
+	logger.Info("Found %d tags to replace in %s", count, definition.source)
 
-		parent := invocation.Parent
-		if parent == nil {
-			return nil, fmt.Errorf("somehow the parent does not exist for %s. (memory corruption???)", invocation.Data)
+	return state, nil
+}
+
+func compileDocumentNodes(
+	parent *html.Node,
+	head *html.Node,
+	source string,
+	resolver *componentResolver,
+	state *documentState,
+	usedComponents map[string]struct{},
+	explicitTemplates map[string]struct{},
+	count *int,
+) error {
+	for node := parent.FirstChild; node != nil; {
+		next := node.NextSibling
+		if node.Type != html.ElementNode {
+			if err := compileDocumentNodes(node, head, source, resolver, state, usedComponents, explicitTemplates, count); err != nil {
+				return err
+			}
+			node = next
+			continue
 		}
 
-		if _, componentExists := resolver.definitions.sources[tag]; componentExists {
-			if htmlUtilities.HasChildren(invocation) {
-				return nil, fmt.Errorf("invalid use of component %s in %s : component bodies are not supported", invocation.Data, definition.source)
+		tag := strings.ToLower(node.Data)
+		if htmlUtilities.HtmlTags[tag] {
+			if err := compileDocumentNodes(node, head, source, resolver, state, usedComponents, explicitTemplates, count); err != nil {
+				return err
+			}
+			node = next
+			continue
+		}
+
+		_, componentExists := resolver.definitions.sources[tag]
+		if componentExists {
+			(*count)++
+			if htmlUtilities.HasChildren(node) {
+				if _, isRuntimeTemplate := resolver.templates[tag]; isRuntimeTemplate {
+					return fmt.Errorf("runtime template component %s in %s cannot receive a body yet", node.Data, source)
+				}
+				acceptsBody, err := resolver.acceptsBody(tag)
+				if err != nil {
+					return err
+				}
+				if !acceptsBody {
+					return fmt.Errorf("invalid use of component %s in %s : component does not declare a default slot", node.Data, source)
+				}
+				if err := compileDocumentNodes(node, head, source, resolver, state, usedComponents, explicitTemplates, count); err != nil {
+					return err
+				}
 			}
 
-			resolved, err := resolver.Instantiate(tag, invocation.Attr)
+			resolved, err := resolver.Instantiate(tag, node.Attr, htmlUtilities.GetAllChildren(node))
 			if err != nil {
-				return nil, fmt.Errorf("could not resolve component %s : %s", invocation.Data, err.Error())
+				return fmt.Errorf("could not resolve component %s : %s", node.Data, err.Error())
 			}
 			if resolved.Dynamic {
-				logger.Warning("Dynamic components are not implemented yet, skipping %s...", invocation.Data)
+				logger.Warning("Dynamic components are not implemented yet, skipping %s...", node.Data)
+				node = next
 				continue
 			}
 
@@ -100,25 +121,27 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 
 			if _, isRuntimeTemplate := resolver.templates[tag]; isRuntimeTemplate {
 				if _, registered := explicitTemplates[tag]; registered {
-					return nil, fmt.Errorf("runtime template component %s is registered more than once in %s", invocation.Data, definition.source)
+					return fmt.Errorf("runtime template component %s is registered more than once in %s", node.Data, source)
 				}
 				explicitTemplates[tag] = struct{}{}
 				if err := addTemplate(state.templates, resolved); err != nil {
-					return nil, fmt.Errorf("could not register runtime template %s in %s : %s", invocation.Data, definition.source, err.Error())
+					return fmt.Errorf("could not register runtime template %s in %s : %s", node.Data, source, err.Error())
 				}
 			} else {
-				htmlUtilities.InsertNodesBefore(invocation, resolved.BodyNodes)
+				htmlUtilities.InsertNodesBefore(node, resolved.BodyNodes)
 			}
 			if err := mergeTemplates(state.templates, resolved.RuntimeTemplates); err != nil {
-				return nil, fmt.Errorf("could not register runtime template dependency in %s : %s", definition.source, err.Error())
+				return fmt.Errorf("could not register runtime template dependency in %s : %s", source, err.Error())
 			}
 
-			parent.RemoveChild(invocation)
+			node.Parent.RemoveChild(node)
+			node = next
 			continue
 		}
 
 		switch tag {
 		case "lua":
+			(*count)++
 			// TODO: prints from lua will be appended to a buffer
 			// then this buffer will be parsed by html
 			// then this will be inserted into document
@@ -127,12 +150,21 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 			logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
 
 		case "opengraph":
-			for _, child := range snippets.OpenGraph(invocation) {
+			(*count)++
+			for _, child := range snippets.OpenGraph(node) {
 				head.AppendChild(child)
 			}
-			parent.RemoveChild(invocation)
+			node.Parent.RemoveChild(node)
+
+		default:
+			logger.Warning("Non-standard tag found in HTML and no component present : %s; assuming Autonomous Custom Element", tag)
+			if err := compileDocumentNodes(node, head, source, resolver, state, usedComponents, explicitTemplates, count); err != nil {
+				return err
+			}
 		}
+
+		node = next
 	}
 
-	return state, nil
+	return nil
 }

@@ -103,12 +103,64 @@ func prepareComponent(path string) (*componentDefinition, error) {
 	if body == nil {
 		return nil, errors.New("no body tag found in component")
 	}
+	if err := validateSlots(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)); err != nil {
+		return nil, err
+	}
 
 	return &componentDefinition{
 		head:    htmlUtilities.GetAllChildren(head),
 		body:    htmlUtilities.GetAllChildren(body),
 		dynamic: bytes.Contains(source, []byte("<lua")),
 	}, nil
+}
+
+func validateSlots(head []*html.Node, body []*html.Node) error {
+	if len(findSlots(head)) > 0 {
+		return errors.New("component slots are not allowed in <head>")
+	}
+
+	slots := findSlots(body)
+	if len(slots) > 1 {
+		return errors.New("component body contains more than one slot")
+	}
+	if len(slots) == 0 {
+		return nil
+	}
+
+	slot := slots[0]
+	if len(slot.Attr) > 0 {
+		return errors.New("default slot attributes are not supported")
+	}
+	if htmlUtilities.HasChildren(slot) {
+		return errors.New("default slot fallback content is not supported")
+	}
+
+	return nil
+}
+
+func findSlots(nodes []*html.Node) []*html.Node {
+	var slots []*html.Node
+	for _, node := range nodes {
+		collectSlots(node, &slots)
+	}
+	return slots
+}
+
+func collectSlots(node *html.Node, slots *[]*html.Node) {
+	if node.Type == html.ElementNode && node.Data == "slot" {
+		*slots = append(*slots, node)
+	}
+	for child := node.FirstChild; child != nil; child = child.NextSibling {
+		collectSlots(child, slots)
+	}
+}
+
+func findSlot(nodes []*html.Node) *html.Node {
+	slots := findSlots(nodes)
+	if len(slots) == 0 {
+		return nil
+	}
+	return slots[0]
 }
 
 // naiveValidation has one purpose:
