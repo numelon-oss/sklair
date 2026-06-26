@@ -93,7 +93,7 @@ func compileDocumentNodes(
 			(*count)++
 			if htmlUtilities.HasChildren(node) {
 				if _, isRuntimeTemplate := resolver.templates[tag]; isRuntimeTemplate {
-					return fmt.Errorf("runtime template component %s in %s cannot receive a body yet", node.Data, source)
+					return fmt.Errorf("runtime template component %s registration in %s must be empty", node.Data, source)
 				}
 				acceptsBody, err := resolver.acceptsBody(tag)
 				if err != nil {

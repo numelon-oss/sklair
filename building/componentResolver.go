@@ -58,13 +58,15 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 	if err != nil {
 		return nil, err
 	}
-	if len(projectedBody) > 0 && findSlot(definition.body) == nil {
-		return nil, fmt.Errorf("component %s does not declare a default slot", name)
+	_, isRuntimeTemplate := r.templates[name]
+	if err := validateComponentMode(definition, isRuntimeTemplate); err != nil {
+		return nil, fmt.Errorf("invalid component %s : %s", name, err.Error())
 	}
-	if len(projectedBody) > 0 {
-		if _, isRuntimeTemplate := r.templates[name]; isRuntimeTemplate {
-			return nil, fmt.Errorf("runtime template component %s cannot receive a body yet", name)
-		}
+	if isRuntimeTemplate && len(projectedBody) > 0 {
+		return nil, fmt.Errorf("runtime template component %s registration must be empty", name)
+	}
+	if !isRuntimeTemplate && len(projectedBody) > 0 && findSlot(definition.body) == nil {
+		return nil, fmt.Errorf("component %s does not declare a default slot", name)
 	}
 
 	head := &html.Node{Type: html.DocumentNode}
@@ -102,13 +104,15 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		}
 	}
 
-	slot := findSlot(htmlUtilities.GetAllChildren(body))
-	if len(projectedBody) > 0 && slot == nil {
-		return nil, fmt.Errorf("component %s default slot is not available for these props", name)
-	}
-	if slot != nil {
-		htmlUtilities.InsertNodesBefore(slot, projectedBody)
-		slot.Parent.RemoveChild(slot)
+	if !isRuntimeTemplate {
+		slot := findSlot(htmlUtilities.GetAllChildren(body))
+		if len(projectedBody) > 0 && slot == nil {
+			return nil, fmt.Errorf("component %s default slot is not available for these props", name)
+		}
+		if slot != nil {
+			htmlUtilities.InsertNodesBefore(slot, projectedBody)
+			slot.Parent.RemoveChild(slot)
+		}
 	}
 
 	stack = append(stack, name)
@@ -118,7 +122,7 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 	}
 
 	instance.BodyNodes = htmlUtilities.GetAllChildren(body)
-	if _, isRuntimeTemplate := r.templates[name]; isRuntimeTemplate && instance.Dynamic {
+	if isRuntimeTemplate && instance.Dynamic {
 		return nil, fmt.Errorf("runtime template component %s is dynamic, but dynamic components are not implemented yet", name)
 	}
 	return instance, nil
@@ -158,7 +162,7 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 
 		if htmlUtilities.HasChildren(node) {
 			if _, isRuntimeTemplate := r.templates[dependencyName]; isRuntimeTemplate {
-				return fmt.Errorf("runtime template component %s inside %s cannot receive a body yet", node.Data, owner)
+				return fmt.Errorf("runtime template component %s registration inside %s must be empty", node.Data, owner)
 			}
 			acceptsBody, err := r.acceptsBody(dependencyName)
 			if err != nil {
