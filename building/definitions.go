@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
+	"strings"
 
 	"github.com/numelon-oss/go-logger"
 	"golang.org/x/net/html"
@@ -164,63 +165,50 @@ func findSlot(nodes []*html.Node) *html.Node {
 }
 
 func validateComponentMode(definition *componentDefinition, runtimeTemplate bool) error {
-	headMarkers := findBodyMarkers(definition.head)
-	bodyMarkers := findBodyMarkers(definition.body)
-
-	if !runtimeTemplate {
-		if len(headMarkers)+len(bodyMarkers) > 0 {
-			return errors.New("data-sklair-body is only supported by runtime templates")
+	if err := rejectDataSklairRuntime(definition.head); err != nil {
+		return err
+	}
+	if err := rejectDataSklairRuntime(definition.body); err != nil {
+		return err
+	}
+	if runtimeTemplate {
+		if binding := findSklairBinding(definition.head); binding != "" {
+			return fmt.Errorf("runtime binding %q is not allowed in component <head>", binding)
 		}
-		return nil
 	}
-
-	if len(findSlots(definition.body)) > 0 {
-		return errors.New("runtime templates use <template data-sklair-body></template>, not <slot></slot>")
-	}
-	if len(headMarkers) > 0 {
-		return errors.New("runtime template body marker is not allowed in <head>")
-	}
-	if len(bodyMarkers) > 1 {
-		return errors.New("runtime template contains more than one body marker")
-	}
-	if len(bodyMarkers) == 0 {
-		return nil
-	}
-
-	marker := bodyMarkers[0]
-	if marker.Data != "template" {
-		return errors.New("data-sklair-body must be declared on a <template> element")
-	}
-	if len(marker.Attr) != 1 || marker.Attr[0].Val != "" {
-		return errors.New("runtime template body marker must not have a value or other attributes")
-	}
-	if htmlUtilities.HasChildren(marker) {
-		return errors.New("runtime template body marker must be empty")
-	}
-
 	return nil
 }
 
-func findBodyMarkers(nodes []*html.Node) []*html.Node {
-	var markers []*html.Node
+func rejectDataSklairRuntime(nodes []*html.Node) error {
 	for _, node := range nodes {
-		collectBodyMarkers(node, &markers)
-	}
-	return markers
-}
-
-func collectBodyMarkers(node *html.Node, markers *[]*html.Node) {
-	if node.Type == html.ElementNode {
-		for _, attribute := range node.Attr {
-			if attribute.Key == "data-sklair-body" {
-				*markers = append(*markers, node)
-				break
+		if node.Type == html.ElementNode {
+			for _, attribute := range node.Attr {
+				if strings.HasPrefix(attribute.Key, "data-sklair-") {
+					return fmt.Errorf("%q is generated runtime syntax; write %q in component source", attribute.Key, strings.TrimPrefix(attribute.Key, "data-"))
+				}
 			}
 		}
+		if err := rejectDataSklairRuntime(htmlUtilities.GetAllChildren(node)); err != nil {
+			return err
+		}
 	}
-	for child := node.FirstChild; child != nil; child = child.NextSibling {
-		collectBodyMarkers(child, markers)
+	return nil
+}
+
+func findSklairBinding(nodes []*html.Node) string {
+	for _, node := range nodes {
+		if node.Type == html.ElementNode {
+			for _, attribute := range node.Attr {
+				if strings.HasPrefix(attribute.Key, "sklair-") {
+					return attribute.Key
+				}
+			}
+		}
+		if binding := findSklairBinding(htmlUtilities.GetAllChildren(node)); binding != "" {
+			return binding
+		}
 	}
+	return ""
 }
 
 // naiveValidation has one purpose:

@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"sklair/building/resources"
 	"sklair/htmlUtilities"
-	"sort"
 	"strings"
 
 	"github.com/numelon-oss/go-logger"
@@ -14,8 +13,6 @@ import (
 type componentInstance struct {
 	Name             string
 	Key              string
-	Props            string
-	Path             []string
 	HeadNodes        []*html.Node
 	BodyNodes        []*html.Node
 	Dependencies     []*componentInstance
@@ -65,6 +62,9 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 	if isRuntimeTemplate && len(projectedBody) > 0 {
 		return nil, fmt.Errorf("runtime template component %s registration must be empty", name)
 	}
+	if isRuntimeTemplate && len(attributes) > 0 {
+		return nil, fmt.Errorf("runtime template component %s registration cannot have attributes", name)
+	}
 	if !isRuntimeTemplate && len(projectedBody) > 0 && findSlot(definition.body) == nil {
 		return nil, fmt.Errorf("component %s does not declare a default slot", name)
 	}
@@ -78,17 +78,19 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		body.AppendChild(htmlUtilities.Clone(node))
 	}
 
-	allNodes := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
-	props, err := bind(allNodes, attributes)
-	if err != nil {
-		return nil, fmt.Errorf("could not bind component %s : %s", name, err.Error())
+	key := name
+	if !isRuntimeTemplate {
+		allNodes := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
+		props, err := bind(allNodes, attributes)
+		if err != nil {
+			return nil, fmt.Errorf("could not bind component %s : %s", name, err.Error())
+		}
+		key += "\x00" + props.signature
 	}
 
 	instance := &componentInstance{
 		Name:             name,
-		Key:              name + "\x00" + props.signature,
-		Props:            props.description,
-		Path:             append(append([]string{}, stack...), name),
+		Key:              key,
 		HeadNodes:        htmlUtilities.GetAllChildren(head),
 		RuntimeTemplates: make(map[string]*componentInstance),
 		Dynamic:          definition.dynamic,
@@ -119,6 +121,11 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 	explicitTemplates := make(map[string]struct{})
 	if err := r.resolveNodes(body, name, stack, instance, explicitTemplates); err != nil {
 		return nil, err
+	}
+	if isRuntimeTemplate {
+		if err := makeRuntime(htmlUtilities.GetAllChildren(body)); err != nil {
+			return nil, fmt.Errorf("could not prepare runtime bindings in component %s : %s", name, err.Error())
+		}
 	}
 
 	instance.BodyNodes = htmlUtilities.GetAllChildren(body)
@@ -187,15 +194,11 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 				return fmt.Errorf("runtime template component %s is registered more than once inside %s", node.Data, owner)
 			}
 			explicitTemplates[dependencyName] = struct{}{}
-			if err := addTemplate(instance.RuntimeTemplates, dependency); err != nil {
-				return err
-			}
+			addTemplate(instance.RuntimeTemplates, dependency)
 		} else {
 			htmlUtilities.InsertNodesBefore(node, dependency.BodyNodes)
 		}
-		if err := mergeTemplates(instance.RuntimeTemplates, dependency.RuntimeTemplates); err != nil {
-			return err
-		}
+		mergeTemplates(instance.RuntimeTemplates, dependency.RuntimeTemplates)
 
 		instance.Dynamic = instance.Dynamic || dependency.Dynamic
 		node.Parent.RemoveChild(node)
@@ -205,38 +208,18 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 	return nil
 }
 
-func addTemplate(templates map[string]*componentInstance, template *componentInstance) error {
-	if previous, exists := templates[template.Name]; exists {
-		if previous.Key != template.Key {
-			return fmt.Errorf(
-				"runtime template %s is required with conflicting compile-time props %s via %s and %s via %s",
-				template.Name,
-				previous.Props,
-				strings.Join(previous.Path, " -> "),
-				template.Props,
-				strings.Join(template.Path, " -> "),
-			)
-		}
-		return nil
+func addTemplate(templates map[string]*componentInstance, template *componentInstance) {
+	if _, exists := templates[template.Name]; exists {
+		return
 	}
 
 	templates[template.Name] = template
-	return nil
 }
 
-func mergeTemplates(destination map[string]*componentInstance, source map[string]*componentInstance) error {
-	names := make([]string, 0, len(source))
-	for name := range source {
-		names = append(names, name)
+func mergeTemplates(destination map[string]*componentInstance, source map[string]*componentInstance) {
+	for _, template := range source {
+		addTemplate(destination, template)
 	}
-	sort.Strings(names)
-	for _, name := range names {
-		template := source[name]
-		if err := addTemplate(destination, template); err != nil {
-			return err
-		}
-	}
-	return nil
 }
 
 func circularDepErr(stack []string, name string) error {

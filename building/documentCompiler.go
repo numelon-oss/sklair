@@ -124,15 +124,11 @@ func compileDocumentNodes(
 					return fmt.Errorf("runtime template component %s is registered more than once in %s", node.Data, source)
 				}
 				explicitTemplates[tag] = struct{}{}
-				if err := addTemplate(state.templates, resolved); err != nil {
-					return fmt.Errorf("could not register runtime template %s in %s : %s", node.Data, source, err.Error())
-				}
+				addTemplate(state.templates, resolved)
 			} else {
 				htmlUtilities.InsertNodesBefore(node, resolved.BodyNodes)
 			}
-			if err := mergeTemplates(state.templates, resolved.RuntimeTemplates); err != nil {
-				return fmt.Errorf("could not register runtime template dependency in %s : %s", source, err.Error())
-			}
+			mergeTemplates(state.templates, resolved.RuntimeTemplates)
 
 			node.Parent.RemoveChild(node)
 			node = next

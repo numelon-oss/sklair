@@ -17,10 +17,9 @@ const (
 )
 
 type componentProps struct {
-	values      map[string]string
-	kinds       map[string]propKind
-	signature   string
-	description string
+	values    map[string]string
+	kinds     map[string]propKind
+	signature string
 }
 
 func bind(nodes []*html.Node, attributes []html.Attribute) (*componentProps, error) {
@@ -123,7 +122,6 @@ func (p *componentProps) normalise() error {
 	sort.Strings(names)
 
 	var signature strings.Builder
-	descriptions := make([]string, 0, len(p.values))
 	for _, name := range names {
 		value, exists := p.values[name]
 		if p.kinds[name] == booleanProp {
@@ -136,16 +134,9 @@ func (p *componentProps) normalise() error {
 		}
 
 		signature.WriteString(fmt.Sprintf("%d:%s:%t:%d:%s;", len(name), name, exists, len(value), value))
-		if _, supplied := p.values[name]; supplied {
-			descriptions = append(descriptions, fmt.Sprintf("%s=%q", name, value))
-		}
 	}
 
 	p.signature = signature.String()
-	p.description = "{}"
-	if len(descriptions) > 0 {
-		p.description = "{" + strings.Join(descriptions, ", ") + "}"
-	}
 	return nil
 }
 
@@ -261,6 +252,64 @@ func bindNode(node *html.Node, props *componentProps) error {
 			return err
 		}
 		child = next
+	}
+	return nil
+}
+
+func makeRuntime(nodes []*html.Node) error {
+	for _, node := range nodes {
+		if node.Type == html.ElementNode {
+			if node.Data == "slot" {
+				marker := &html.Node{
+					Type: html.ElementNode,
+					Data: "template",
+					Attr: []html.Attribute{{Key: "data-sklair-body"}},
+				}
+				node.Parent.InsertBefore(marker, node)
+				node.Parent.RemoveChild(node)
+				continue
+			}
+
+			for i := range node.Attr {
+				attribute := &node.Attr[i]
+				if !strings.HasPrefix(attribute.Key, "sklair-") {
+					continue
+				}
+				if err := validateRuntimeBinding(*attribute); err != nil {
+					return err
+				}
+				attribute.Key = "data-" + attribute.Key
+			}
+		}
+
+		if err := makeRuntime(htmlUtilities.GetAllChildren(node)); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func validateRuntimeBinding(attribute html.Attribute) error {
+	switch {
+	case attribute.Key == "sklair-if", attribute.Key == "sklair-text":
+	case strings.HasPrefix(attribute.Key, "sklair-attr-"):
+		if attribute.Key == "sklair-attr-" {
+			return fmt.Errorf("sklair-attr binding is missing its attribute name")
+		}
+	case strings.HasPrefix(attribute.Key, "sklair-prop-"):
+		if attribute.Key == "sklair-prop-" {
+			return fmt.Errorf("sklair-prop binding is missing its property name")
+		}
+	case strings.HasPrefix(attribute.Key, "sklair-class-"):
+		if attribute.Key == "sklair-class-" {
+			return fmt.Errorf("sklair-class binding is missing its class name")
+		}
+	default:
+		return fmt.Errorf("unknown runtime binding %q", attribute.Key)
+	}
+
+	if _, err := propName(attribute.Val); err != nil {
+		return fmt.Errorf("invalid %s binding : %s", attribute.Key, err.Error())
 	}
 	return nil
 }
