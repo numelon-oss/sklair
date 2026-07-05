@@ -51,7 +51,7 @@ var remove = map[string][]string{
 	"os": {"execute", "exit", "getenv", "remove", "rename", "setenv" /*"setlocale",*/, "tmpname"},
 }
 
-func OpenSandboxedDefault(ls *lua.LState, opts *SandboxOptions) {
+func OpenSandboxedDefault(ls *lua.LState, runtime *Runtime) {
 	for _, lib := range luaLibs {
 		ls.Push(ls.NewFunction(lib.libFunc))
 		ls.Push(lua.LString(lib.libName))
@@ -67,12 +67,15 @@ func OpenSandboxedDefault(ls *lua.LState, opts *SandboxOptions) {
 			table = ls.GetGlobal(libName)
 		}
 
-		tbl := table.(*lua.LTable)
+		tbl, exists := table.(*lua.LTable)
+		if !exists {
+			continue
+		}
 		for _, funcName := range funcs {
 			if libName == "os" && funcName == "exit" {
 				tbl.RawSetString(funcName, ls.NewFunction(func(L *lua.LState) int {
 					code := L.OptInt(1, 0)
-					opts.ExitChannel <- code
+					runtime.exit(L, code)
 					return 0
 				}))
 
@@ -85,7 +88,7 @@ func OpenSandboxedDefault(ls *lua.LState, opts *SandboxOptions) {
 	//ls.SetGlobal("package", lua.LNil)
 	// TODO: modify require() so that it is luvit-like, especially relative paths
 	ls.SetGlobal("require", ls.NewFunction(func(L *lua.LState) int {
-		L.RaiseError("require() is temporarily disabled in Sklair hooks for sandboxing reasons")
+		L.RaiseError("require() is temporarily disabled in Sklair Lua for sandboxing reasons")
 		return 0
 	}))
 }

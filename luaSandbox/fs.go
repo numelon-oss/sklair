@@ -18,20 +18,20 @@ type FSContext struct {
 	Mode         HookMode
 }
 
-func openFs(opts *SandboxOptions) lua.LGFunction {
-	return func(L *lua.LState) int {
-		contextualised := make(map[string]lua.LGFunction, len(fsFuncs))
-		for name, f := range fsFuncs {
-			contextualised[name] = f(&opts.FSContext)
+func newFsModule(L *lua.LState, opts *SandboxOptions) *lua.LTable {
+	contextualised := make(map[string]lua.LGFunction, len(fsFuncs))
+	for name, f := range fsFuncs {
+		if opts.Profile == InlineSandbox && name == "write" {
+			continue
 		}
-
-		fsMod := L.RegisterModule("fs", contextualised)
-		L.Push(fsMod)
-		return 0
+		contextualised[name] = f(opts)
 	}
+	module := L.NewTable()
+	L.SetFuncs(module, contextualised)
+	return module
 }
 
-type lFuncWithFsContext func(*FSContext) lua.LGFunction
+type lFuncWithFsContext func(*SandboxOptions) lua.LGFunction
 
 var fsFuncs = map[string]lFuncWithFsContext{
 	"read":    readFile,
@@ -46,7 +46,8 @@ const (
 	AccessModeWrite
 )
 
-func resolvePath(ctx *FSContext, path string, mode AccessMode) (string, error) {
+func resolvePath(opts *SandboxOptions, path string, mode AccessMode) (string, error) {
+	ctx := &opts.FSContext
 	// TODO: what if theres a symlink in the parent and suddenly were exposed now?
 	// yikes, but good for now because hooks are assumed trusted for now
 	// TODO: later use filepath.Clean, filepath.IsAbs, filepath.Rel for full canonical validation against the above issue
@@ -72,7 +73,7 @@ func resolvePath(ctx *FSContext, path string, mode AccessMode) (string, error) {
 
 	case strings.HasPrefix(path, "built:"):
 		if ctx.Mode != HookModePost {
-			return "", errors.New("built files are only available in post-build hooks")
+			return "", errors.New("built files are only available after compilation")
 		}
 		return filepath.Join(ctx.BuiltDir, strings.TrimPrefix(path, "built:")), nil
 	}
@@ -82,11 +83,11 @@ func resolvePath(ctx *FSContext, path string, mode AccessMode) (string, error) {
 
 // readFile reads the contents of a file specified by the first argument and returns the data and a potential error.
 // on success, returns the data as a string. on error, returns nil and the error message.
-func readFile(ctx *FSContext) lua.LGFunction {
+func readFile(opts *SandboxOptions) lua.LGFunction {
 	return func(L *lua.LState) int {
 		name := L.CheckString(1)
 
-		path, err := resolvePath(ctx, name, AccessModeRead)
+		path, err := resolvePath(opts, name, AccessModeRead)
 		if err != nil {
 			L.Push(lua.LNil)
 			L.Push(lua.LString(err.Error()))
@@ -107,12 +108,12 @@ func readFile(ctx *FSContext) lua.LGFunction {
 
 // writeFile writes the contents of the second argument to the file specified by the first argument.
 // on success, returns true. on error, returns the nil and the error message.
-func writeFile(ctx *FSContext) lua.LGFunction {
+func writeFile(opts *SandboxOptions) lua.LGFunction {
 	return func(L *lua.LState) int {
 		name := L.CheckString(1)
 		data := L.CheckString(2)
 
-		path, err := resolvePath(ctx, name, AccessModeWrite)
+		path, err := resolvePath(opts, name, AccessModeWrite)
 		if err != nil {
 			L.Push(lua.LNil)
 			L.Push(lua.LString(err.Error()))
@@ -137,11 +138,11 @@ func writeFile(ctx *FSContext) lua.LGFunction {
 	}
 }
 
-func scanDir(ctx *FSContext) lua.LGFunction {
+func scanDir(opts *SandboxOptions) lua.LGFunction {
 	return func(L *lua.LState) int {
 		name := L.CheckString(1)
 
-		path, err := resolvePath(ctx, name, AccessModeRead)
+		path, err := resolvePath(opts, name, AccessModeRead)
 		if err != nil {
 			L.Push(lua.LNil)
 			L.Push(lua.LString(err.Error()))

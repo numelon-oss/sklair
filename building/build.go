@@ -1,6 +1,7 @@
 package building
 
 import (
+	"sklair/luaSandbox"
 	"sklair/sklairConfig"
 	"time"
 
@@ -18,9 +19,11 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	if err := resetHookWorkspace(inputs.paths); err != nil {
 		return err
 	}
+	luaRuntime := luaSandbox.NewRuntime()
+	defer luaRuntime.Close()
 
 	preHookStart := time.Now()
-	if err := runPreHooks(inputs); err != nil {
+	if err := runPreHooks(inputs, luaRuntime); err != nil {
 		return err
 	}
 	preHookEnd := time.Since(preHookStart)
@@ -32,7 +35,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 
 	compilationStart := time.Now()
 	logger.Info("Preparing document definitions...")
-	definitions, err := prepareDefinitions(inputs, plan)
+	definitions, err := prepareDefinitions(inputs, plan, luaRuntime)
 	if err != nil {
 		return err
 	}
@@ -61,7 +64,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	staticEnd := time.Since(staticStart)
 
 	postHookStart := time.Now()
-	if err := runPostHooks(inputs); err != nil {
+	if err := runPostHooks(inputs, luaRuntime); err != nil {
 		return err
 	}
 	postHookEnd := time.Since(postHookStart)

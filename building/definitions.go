@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"sklair/discovery"
 	"sklair/htmlUtilities"
+	"sklair/luaSandbox"
 	"strings"
 
 	"github.com/numelon-oss/go-logger"
@@ -29,6 +30,7 @@ type componentDefinitions struct {
 	root     string
 	sources  map[string]discovery.ComponentSource
 	prepared map[string]*componentDefinition
+	static   *staticLuaCompiler
 }
 
 type definitionSet struct {
@@ -36,12 +38,28 @@ type definitionSet struct {
 	components *componentDefinitions
 }
 
-func prepareDefinitions(inputs *buildInputs, plan *buildPlan) (*definitionSet, error) {
+func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbox.Runtime) (*definitionSet, error) {
+	static := &staticLuaCompiler{
+		runtime: runtime,
+		fsContext: luaSandbox.FSContext{
+			CacheDir:     inputs.paths.cache,
+			ProjectDir:   inputs.paths.input,
+			TempDir:      inputs.paths.temp,
+			GeneratedDir: inputs.paths.generated,
+			BuiltDir:     inputs.paths.output,
+			Mode:         luaSandbox.HookModePre,
+		},
+		components: inputs.components,
+		templates:  inputs.templates,
+	}
 	documents := make([]documentDefinition, 0, len(plan.documents))
 	for _, planned := range plan.documents {
 		root, err := htmlUtilities.ParseFile(planned.source)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse file %s : %s", planned.source, err.Error())
+		}
+		if err := static.prepare(root, planned.source); err != nil {
+			return nil, fmt.Errorf("could not prepare document %s : %s", planned.source, err.Error())
 		}
 
 		documents = append(documents, documentDefinition{
@@ -56,6 +74,7 @@ func prepareDefinitions(inputs *buildInputs, plan *buildPlan) (*definitionSet, e
 			root:     inputs.paths.components,
 			sources:  inputs.components,
 			prepared: make(map[string]*componentDefinition),
+			static:   static,
 		},
 	}, nil
 }
@@ -71,7 +90,7 @@ func (d *componentDefinitions) prepare(name string) (*componentDefinition, disco
 	}
 
 	logger.Info("Preparing component %s...", name)
-	definition, err := prepareComponent(filepath.Join(d.root, source.Entry()))
+	definition, err := prepareComponent(filepath.Join(d.root, source.Entry()), d.static)
 	if err != nil {
 		return nil, discovery.ComponentSource{}, fmt.Errorf("could not prepare component %s : %s", source.Entry(), err.Error())
 	}
@@ -80,7 +99,7 @@ func (d *componentDefinitions) prepare(name string) (*componentDefinition, disco
 	return definition, source, nil
 }
 
-func prepareComponent(path string) (*componentDefinition, error) {
+func prepareComponent(path string, static *staticLuaCompiler) (*componentDefinition, error) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -92,6 +111,9 @@ func prepareComponent(path string) (*componentDefinition, error) {
 
 	root, err := html.Parse(bytes.NewReader(source))
 	if err != nil {
+		return nil, err
+	}
+	if err := static.prepare(root, path); err != nil {
 		return nil, err
 	}
 

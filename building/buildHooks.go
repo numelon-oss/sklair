@@ -22,13 +22,13 @@ func resetHookWorkspace(paths buildPaths) error {
 	return nil
 }
 
-func runPreHooks(inputs *buildInputs) error {
+func runPreHooks(inputs *buildInputs, runtime *luaSandbox.Runtime) error {
 	if inputs.hooks == nil {
 		return nil
 	}
 
 	logger.Info("Running pre-build hooks...")
-	if err := hooks.RunHooks(inputs.paths.hooks, inputs.hooks.PreBuild, &luaSandbox.FSContext{
+	if err := hooks.RunHooks(runtime, inputs.paths.hooks, inputs.hooks.PreBuild, &luaSandbox.FSContext{
 		CacheDir:     inputs.paths.cache,
 		ProjectDir:   inputs.paths.input,
 		TempDir:      inputs.paths.temp,
@@ -42,7 +42,7 @@ func runPreHooks(inputs *buildInputs) error {
 	return nil
 }
 
-func runPostHooks(inputs *buildInputs) error {
+func runPostHooks(inputs *buildInputs, runtime *luaSandbox.Runtime) error {
 	if inputs.hooks == nil {
 		return nil
 	}
@@ -63,7 +63,7 @@ func runPostHooks(inputs *buildInputs) error {
 	}
 
 	logger.Info("Running post-build hooks...")
-	if err := hooks.RunHooks(inputs.paths.hooks, inputs.hooks.PostBuild, &luaSandbox.FSContext{
+	if err := hooks.RunHooks(runtime, inputs.paths.hooks, inputs.hooks.PostBuild, &luaSandbox.FSContext{
 		CacheDir:     inputs.paths.cache,
 		ProjectDir:   inputs.paths.input,
 		TempDir:      inputs.paths.temp,
