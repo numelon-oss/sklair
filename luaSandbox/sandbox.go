@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"io"
+	"strings"
 
 	lua "github.com/yuin/gopher-lua"
 )
@@ -27,8 +28,9 @@ type Runtime struct {
 }
 
 type Scope struct {
-	runtime *Runtime
-	env     *lua.LTable
+	runtime  *Runtime
+	env      *lua.LTable
+	readOnly map[*lua.LTable]*lua.LTable
 }
 
 type Result struct {
@@ -75,6 +77,7 @@ func (r *Runtime) NewScope(options SandboxOptions) *Scope {
 	env := r.state.NewTable()
 	metatable := r.state.NewTable()
 	metatable.RawSetString("__index", r.state.Env)
+	metatable.RawSetString("__metatable", lua.LString("Sklair scope"))
 	r.state.SetMetatable(env, metatable)
 	env.RawSetString("_G", env)
 	for _, name := range []string{"table", "os", "string", "math", "json"} {
@@ -84,7 +87,7 @@ func (r *Runtime) NewScope(options SandboxOptions) *Scope {
 	}
 	env.RawSetString("fs", newFsModule(r.state, &options))
 
-	return &Scope{runtime: r, env: env}
+	return &Scope{runtime: r, env: env, readOnly: make(map[*lua.LTable]*lua.LTable)}
 }
 
 func cloneTable(L *lua.LState, source *lua.LTable) *lua.LTable {
@@ -102,9 +105,125 @@ func (s *Scope) SetModule(name string, functions map[string]lua.LGFunction) {
 	s.env.RawSetString(name, module)
 }
 
+func (s *Scope) SetReadOnly(name string, values map[string]lua.LValue) {
+	backing := s.runtime.state.NewTable()
+	for key, value := range values {
+		backing.RawSetString(key, value)
+	}
+	proxy := s.runtime.state.NewTable()
+	metatable := s.runtime.state.NewTable()
+	metatable.RawSetString("__index", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		key, ok := L.Get(2).(lua.LString)
+		if !ok {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(backing.RawGetString(strings.ToLower(string(key))))
+		return 1
+	}))
+	metatable.RawSetString("__newindex", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		L.RaiseError("%s is read-only", name)
+		return 0
+	}))
+	metatable.RawSetString("__metatable", lua.LString("read-only "+name))
+	s.runtime.state.SetMetatable(proxy, metatable)
+	s.readOnly[proxy] = backing
+	s.env.RawSetString(name, proxy)
+	s.protectReadOnly(name)
+}
+
+func (s *Scope) protectReadOnly(name string) {
+	s.env.RawSetString("next", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		table := L.CheckTable(1)
+		if backing := s.readOnly[table]; backing != nil {
+			table = backing
+		}
+		key := lua.LNil
+		if L.GetTop() > 1 {
+			key = L.Get(2)
+		}
+		key, value := table.Next(key)
+		if key == lua.LNil {
+			L.Push(lua.LNil)
+			return 1
+		}
+		L.Push(key)
+		L.Push(value)
+		return 2
+	}))
+	s.env.RawSetString("pairs", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		L.CheckTable(1)
+		L.Push(s.env.RawGetString("next"))
+		L.Push(L.Get(1))
+		L.Push(lua.LNil)
+		return 3
+	}))
+	s.env.RawSetString("rawget", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		table := L.CheckTable(1)
+		if backing := s.readOnly[table]; backing != nil {
+			key, ok := L.Get(2).(lua.LString)
+			if !ok {
+				L.Push(lua.LNil)
+				return 1
+			}
+			L.Push(backing.RawGetString(strings.ToLower(string(key))))
+			return 1
+		}
+		L.Push(table.RawGet(L.CheckAny(2)))
+		return 1
+	}))
+	s.env.RawSetString("rawset", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		table := L.CheckTable(1)
+		key := L.CheckAny(2)
+		if s.readOnly[table] != nil || table == s.env && key == lua.LString(name) {
+			L.RaiseError("%s is read-only", name)
+			return 0
+		}
+		table.RawSet(key, L.CheckAny(3))
+		L.Push(table)
+		return 1
+	}))
+	if table, ok := s.env.RawGetString("table").(*lua.LTable); ok {
+		for _, functionName := range []string{"insert", "remove", "sort"} {
+			original, ok := table.RawGetString(functionName).(*lua.LFunction)
+			if !ok {
+				continue
+			}
+			table.RawSetString(functionName, s.runtime.state.NewFunction(func(L *lua.LState) int {
+				if target, ok := L.Get(1).(*lua.LTable); ok && s.readOnly[target] != nil {
+					L.RaiseError("%s is read-only", name)
+					return 0
+				}
+				argumentCount := L.GetTop()
+				arguments := make([]lua.LValue, argumentCount)
+				for i := range arguments {
+					arguments[i] = L.Get(i + 1)
+				}
+				if err := L.CallByParam(lua.P{Fn: original, NRet: lua.MultRet, Protect: true}, arguments...); err != nil {
+					L.RaiseError(err.Error())
+					return 0
+				}
+				return L.GetTop() - argumentCount
+			}))
+		}
+	}
+}
+
 // Run executes one Lua usage on a fresh child thread. The scope environment
 // survives between usages, while stacks and os.exit are confined to this lua usage / run
 func (s *Scope) Run(source io.Reader, name string) (Result, error) {
+	function, err := s.runtime.state.Load(source, name)
+	if err != nil {
+		return Result{}, err
+	}
+	return s.run(function.Proto)
+}
+
+func (s *Scope) RunPrototype(prototype *lua.FunctionProto) (Result, error) {
+	return s.run(prototype)
+}
+
+func (s *Scope) run(prototype *lua.FunctionProto) (Result, error) {
 	thread, cancel := s.runtime.state.NewThread()
 	thread.Env = s.env
 	s.runtime.cancels[thread] = cancel
@@ -113,10 +232,7 @@ func (s *Scope) Run(source io.Reader, name string) (Result, error) {
 		cancel()
 	}()
 
-	function, err := thread.Load(source, name)
-	if err != nil {
-		return Result{}, err
-	}
+	function := thread.NewFunctionFromProto(prototype)
 	state, err, _ := s.runtime.state.Resume(thread, function)
 	if code, exited := s.runtime.exits[thread]; exited {
 		delete(s.runtime.exits, thread)

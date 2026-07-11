@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strings"
 
+	lua "github.com/yuin/gopher-lua"
 	"golang.org/x/net/html"
 )
 
@@ -14,15 +15,18 @@ type propKind uint8
 const (
 	stringProp propKind = iota
 	booleanProp
+	dynamicProp
 )
 
 type componentProps struct {
 	values    map[string]string
 	kinds     map[string]propKind
+	declared  map[string]struct{}
 	signature string
+	open      bool
 }
 
-func bind(nodes []*html.Node, attributes []html.Attribute) (*componentProps, error) {
+func bind(nodes []*html.Node, attributes []html.Attribute, dynamic *dynamicLuaDefinition) (*componentProps, error) {
 	kinds := make(map[string]propKind)
 	for _, node := range nodes {
 		if err := inspectBindings(node, kinds); err != nil {
@@ -36,18 +40,34 @@ func bind(nodes []*html.Node, attributes []html.Attribute) (*componentProps, err
 		if _, exists := values[name]; exists {
 			return nil, fmt.Errorf("prop %q is supplied more than once", name)
 		}
-		if _, exists := kinds[name]; !exists {
-			return nil, fmt.Errorf("component does not accept prop %q", name)
-		}
 		values[name] = attribute.Val
 	}
+	declared := make(map[string]struct{}, len(kinds))
+	for name := range kinds {
+		declared[name] = struct{}{}
+	}
+	open := false
+	if dynamic != nil {
+		open = dynamic.open
+		for name := range dynamic.props {
+			declared[name] = struct{}{}
+			if _, exists := kinds[name]; !exists {
+				kinds[name] = dynamicProp
+			}
+		}
+	}
 
-	props := &componentProps{values: values, kinds: kinds}
+	props := &componentProps{values: values, kinds: kinds, declared: declared, open: open}
 	if err := props.normalise(); err != nil {
 		return nil, err
 	}
 	for _, node := range nodes {
 		if err := bindNode(node, props); err != nil {
+			return nil, err
+		}
+	}
+	if dynamic == nil {
+		if err := props.finish(); err != nil {
 			return nil, err
 		}
 	}
@@ -115,9 +135,16 @@ func propName(value string) (string, error) {
 }
 
 func (p *componentProps) normalise() error {
-	names := make([]string, 0, len(p.kinds))
+	names := make([]string, 0, len(p.kinds)+len(p.values))
+	seen := make(map[string]struct{})
 	for name := range p.kinds {
 		names = append(names, name)
+		seen[name] = struct{}{}
+	}
+	for name := range p.values {
+		if _, exists := seen[name]; !exists {
+			names = append(names, name)
+		}
 	}
 	sort.Strings(names)
 
@@ -137,6 +164,55 @@ func (p *componentProps) normalise() error {
 	}
 
 	p.signature = signature.String()
+	return nil
+}
+
+func (p *componentProps) finish() error {
+	if p.open {
+		return nil
+	}
+	for name := range p.values {
+		if _, exists := p.declared[name]; !exists {
+			return fmt.Errorf("component does not accept prop %q", name)
+		}
+	}
+	return nil
+}
+
+func (p *componentProps) luaValues() map[string]lua.LValue {
+	values := make(map[string]lua.LValue, len(p.values))
+	for name, value := range p.values {
+		switch value {
+		case "", "true":
+			values[name] = lua.LTrue
+		case "false":
+			values[name] = lua.LFalse
+		default:
+			values[name] = lua.LString(value)
+		}
+	}
+	return values
+}
+
+func (p *componentProps) bindEmitted(nodes []*html.Node) error {
+	kinds := make(map[string]propKind)
+	for _, node := range nodes {
+		if err := inspectBindings(node, kinds); err != nil {
+			return err
+		}
+	}
+	for name, kind := range kinds {
+		if previous, exists := p.kinds[name]; exists && previous != dynamicProp && previous != kind {
+			return fmt.Errorf("prop %q is used as both a string and a boolean", name)
+		}
+		p.kinds[name] = kind
+		p.declared[name] = struct{}{}
+	}
+	for _, node := range nodes {
+		if err := bindNode(node, p); err != nil {
+			return err
+		}
+	}
 	return nil
 }
 

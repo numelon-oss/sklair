@@ -5,12 +5,14 @@ import (
 	"fmt"
 	"sklair/discovery"
 	"sklair/luaSandbox"
+	"strconv"
 	"strings"
 
 	"golang.org/x/net/html"
 )
 
 const inlineLuaType = "application/x-sklair-lua"
+const dynamicLuaMarker = "sklair-dynamic-lua"
 
 type staticLuaCompiler struct {
 	runtime    *luaSandbox.Runtime
@@ -24,22 +26,44 @@ type inlineLuaScript struct {
 	static bool
 }
 
-func (c *staticLuaCompiler) prepare(root *html.Node, source string) error {
+func (c *staticLuaCompiler) prepare(root *html.Node, source string, runtimeTemplate bool) (*dynamicLuaDefinition, error) {
 	scripts, err := collectInlineLua(root)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	if len(scripts) == 0 {
-		return nil
+		return nil, nil
+	}
+	if runtimeTemplate {
+		return nil, errors.New("runtime template components cannot contain compile-time Lua")
 	}
 
 	for i, script := range scripts {
-		if !script.static {
-			return fmt.Errorf("dynamic inline Lua block %d is not implemented until Stage 5", i+1)
+		if script.static && beneathSklairIf(script.node) {
+			return nil, fmt.Errorf("static Lua block %d cannot be nested beneath sklair-if", i+1)
 		}
-		if beneathSklairIf(script.node) {
-			return fmt.Errorf("static Lua block %d cannot be nested beneath sklair-if", i+1)
+	}
+
+	dynamic := &dynamicLuaDefinition{props: make(map[string]struct{})}
+	for i, script := range scripts {
+		if script.static {
+			continue
 		}
+		block := i + 1
+		chunkName := fmt.Sprintf("%s:dynamic-lua-%d", source, block)
+		prepared, props, open, err := prepareDynamicLua(scriptSource(script.node), chunkName, block)
+		if err != nil {
+			return nil, fmt.Errorf("dynamic Lua block %d in %s failed\n%s", block, source, err.Error())
+		}
+		index := len(dynamic.blocks)
+		dynamic.blocks = append(dynamic.blocks, prepared)
+		for name := range props {
+			dynamic.props[name] = struct{}{}
+		}
+		dynamic.open = dynamic.open || open
+		marker := &html.Node{Type: html.ElementNode, Data: dynamicLuaMarker, Attr: []html.Attribute{{Key: "block", Val: strconv.Itoa(index)}}}
+		script.node.Parent.InsertBefore(marker, script.node)
+		script.node.Parent.RemoveChild(script.node)
 	}
 
 	emitter := &luaEmitter{}
@@ -50,22 +74,25 @@ func (c *staticLuaCompiler) prepare(root *html.Node, source string) error {
 	openSklair(scope, emitter, c)
 
 	for i, script := range scripts {
+		if !script.static {
+			continue
+		}
 		emitter.parent = script.node.Parent
 		emitter.nodes = nil
 		block := i + 1
 		chunkName := fmt.Sprintf("%s:static-lua-%d", source, block)
 		result, err := scope.Run(strings.NewReader(scriptSource(script.node)), chunkName)
 		if err != nil {
-			return fmt.Errorf("static Lua block %d in %s failed\n%s", block, source, err.Error())
+			return nil, fmt.Errorf("static Lua block %d in %s failed\n%s", block, source, err.Error())
 		}
 		if result.Exited && result.ExitCode != 0 {
 			if result.ExitCode == 1 {
-				return fmt.Errorf("static Lua block %d in %s exited with failure", block, source)
+				return nil, fmt.Errorf("static Lua block %d in %s exited with failure", block, source)
 			}
-			return fmt.Errorf("static Lua block %d in %s exited with code %d", block, source, result.ExitCode)
+			return nil, fmt.Errorf("static Lua block %d in %s exited with code %d", block, source, result.ExitCode)
 		}
 		if err := validateLuaOutput(emitter.nodes, emitter.parent, c.components); err != nil {
-			return fmt.Errorf("static Lua block %d in %s : %s", block, source, err.Error())
+			return nil, fmt.Errorf("static Lua block %d in %s : %s", block, source, err.Error())
 		}
 
 		parent := script.node.Parent
@@ -75,7 +102,10 @@ func (c *staticLuaCompiler) prepare(root *html.Node, source string) error {
 		parent.RemoveChild(script.node)
 	}
 
-	return nil
+	if len(dynamic.blocks) == 0 {
+		return nil, nil
+	}
+	return dynamic, nil
 }
 
 func collectInlineLua(root *html.Node) ([]inlineLuaScript, error) {

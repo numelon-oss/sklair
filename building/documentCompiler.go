@@ -45,6 +45,12 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 		templates:          make(map[string]*componentInstance),
 		componentFolders:   make(map[string]discovery.ComponentSource),
 	}
+	if definition.lua != nil {
+		props := &componentProps{values: make(map[string]string), kinds: make(map[string]propKind), declared: make(map[string]struct{})}
+		if err := resolver.definitions.static.runDynamic([]*html.Node{doc}, definition.lua, props, definition.source); err != nil {
+			return nil, err
+		}
+	}
 
 	// usedComponents ensures each component and its recursive dependencies contribute
 	// their <head> nodes and folder assets at most once per document
@@ -111,12 +117,6 @@ func compileDocumentNodes(
 			if err != nil {
 				return fmt.Errorf("could not resolve component %s : %s", node.Data, err.Error())
 			}
-			if resolved.Dynamic {
-				logger.Warning("Dynamic components are not implemented yet, skipping %s...", node.Data)
-				node = next
-				continue
-			}
-
 			contributeComponent(resolved, resolver, head, usedComponents, state.componentFolders)
 
 			if _, isRuntimeTemplate := resolver.templates[tag]; isRuntimeTemplate {

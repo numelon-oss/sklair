@@ -4,10 +4,12 @@ import (
 	"fmt"
 	"sklair/building/resources"
 	"sklair/htmlUtilities"
+	"slices"
 	"strings"
 
 	"github.com/numelon-oss/go-logger"
 	"golang.org/x/net/html"
+	"golang.org/x/net/html/atom"
 )
 
 type componentInstance struct {
@@ -33,7 +35,7 @@ func newComponentResolver(definitions *componentDefinitions, templates map[strin
 }
 
 func (r *componentResolver) Instantiate(name string, attributes []html.Attribute, body []*html.Node) (*componentInstance, error) {
-	return r.instantiate(strings.ToLower(name), attributes, body, nil)
+	return r.instantiate(strings.ToLower(name), attributes, body, nil, false)
 }
 
 func (r *componentResolver) acceptsBody(name string) (bool, error) {
@@ -44,11 +46,9 @@ func (r *componentResolver) acceptsBody(name string) (bool, error) {
 	return findSlot(definition.body) != nil, nil
 }
 
-func (r *componentResolver) instantiate(name string, attributes []html.Attribute, projectedBody []*html.Node, stack []string) (*componentInstance, error) {
-	for _, ancestor := range stack {
-		if ancestor == name {
-			return nil, circularDepErr(stack, name)
-		}
+func (r *componentResolver) instantiate(name string, attributes []html.Attribute, projectedBody []*html.Node, stack []string, runtimeTree bool) (*componentInstance, error) {
+	if slices.Contains(stack, name) {
+		return nil, circularDepErr(stack, name)
 	}
 
 	definition, source, err := r.definitions.prepare(name)
@@ -56,6 +56,10 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		return nil, err
 	}
 	_, isRuntimeTemplate := r.templates[name]
+	if runtimeTree && definition.lua != nil {
+		return nil, fmt.Errorf("runtime template dependency %s contains compile-time dynamic Lua", name)
+	}
+	runtimeTree = runtimeTree || isRuntimeTemplate
 	if err := validateComponentMode(definition, isRuntimeTemplate); err != nil {
 		return nil, fmt.Errorf("invalid component %s : %s", name, err.Error())
 	}
@@ -69,19 +73,20 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		return nil, fmt.Errorf("component %s does not declare a default slot", name)
 	}
 
-	head := &html.Node{Type: html.DocumentNode}
+	head := &html.Node{Type: html.ElementNode, DataAtom: atom.Head, Data: "head"}
 	for _, node := range definition.head {
 		head.AppendChild(htmlUtilities.Clone(node))
 	}
-	body := &html.Node{Type: html.DocumentNode}
+	body := &html.Node{Type: html.ElementNode, DataAtom: atom.Body, Data: "body"}
 	for _, node := range definition.body {
 		body.AppendChild(htmlUtilities.Clone(node))
 	}
 
 	key := name
+	var props *componentProps
 	if !isRuntimeTemplate {
 		allNodes := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
-		props, err := bind(allNodes, attributes)
+		props, err = bind(allNodes, attributes, definition.lua)
 		if err != nil {
 			return nil, fmt.Errorf("could not bind component %s : %s", name, err.Error())
 		}
@@ -93,17 +98,7 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 		Key:              key,
 		HeadNodes:        htmlUtilities.GetAllChildren(head),
 		RuntimeTemplates: make(map[string]*componentInstance),
-		Dynamic:          definition.dynamic,
-	}
-
-	if source.IsFolder {
-		outputDir := "/_sklair/components/" + name
-		if err := resources.RewriteURLs(instance.HeadNodes, outputDir); err != nil {
-			return nil, fmt.Errorf("could not rewrite component %s head resource URLs : %s", source.Entry(), err.Error())
-		}
-		if err := resources.RewriteURLs(htmlUtilities.GetAllChildren(body), outputDir); err != nil {
-			return nil, fmt.Errorf("could not rewrite component %s body resource URLs : %s", source.Entry(), err.Error())
-		}
+		Dynamic:          definition.lua != nil,
 	}
 
 	if !isRuntimeTemplate {
@@ -116,10 +111,31 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 			slot.Parent.RemoveChild(slot)
 		}
 	}
+	if !isRuntimeTemplate {
+		roots := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
+		if err := r.definitions.static.runDynamic(roots, definition.lua, props, source.Entry()); err != nil {
+			return nil, err
+		}
+		if err := props.normalise(); err != nil {
+			return nil, fmt.Errorf("could not normalise component %s props : %s", name, err.Error())
+		}
+		instance.Key = name + "\x00" + props.signature
+		instance.HeadNodes = htmlUtilities.GetAllChildren(head)
+	}
+
+	if source.IsFolder {
+		outputDir := "/_sklair/components/" + name
+		if err := resources.RewriteURLs(instance.HeadNodes, outputDir); err != nil {
+			return nil, fmt.Errorf("could not rewrite component %s head resource URLs : %s", source.Entry(), err.Error())
+		}
+		if err := resources.RewriteURLs(htmlUtilities.GetAllChildren(body), outputDir); err != nil {
+			return nil, fmt.Errorf("could not rewrite component %s body resource URLs : %s", source.Entry(), err.Error())
+		}
+	}
 
 	stack = append(stack, name)
 	explicitTemplates := make(map[string]struct{})
-	if err := r.resolveNodes(body, name, stack, instance, explicitTemplates); err != nil {
+	if err := r.resolveNodes(body, name, stack, instance, explicitTemplates, runtimeTree); err != nil {
 		return nil, err
 	}
 	if isRuntimeTemplate {
@@ -130,16 +146,16 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 
 	instance.BodyNodes = htmlUtilities.GetAllChildren(body)
 	if isRuntimeTemplate && instance.Dynamic {
-		return nil, fmt.Errorf("runtime template component %s is dynamic, but dynamic components are not implemented yet", name)
+		return nil, fmt.Errorf("runtime template component %s contains compile-time dynamic Lua", name)
 	}
 	return instance, nil
 }
 
-func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack []string, instance *componentInstance, explicitTemplates map[string]struct{}) error {
+func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack []string, instance *componentInstance, explicitTemplates map[string]struct{}, runtimeTree bool) error {
 	for node := parent.FirstChild; node != nil; {
 		next := node.NextSibling
 		if node.Type != html.ElementNode {
-			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates); err != nil {
+			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates, runtimeTree); err != nil {
 				return err
 			}
 			node = next
@@ -148,7 +164,7 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 
 		dependencyName := strings.ToLower(node.Data)
 		if htmlUtilities.HtmlTags[dependencyName] {
-			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates); err != nil {
+			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates, runtimeTree); err != nil {
 				return err
 			}
 			node = next
@@ -160,7 +176,7 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 			if dependencyName != "lua" && dependencyName != "opengraph" {
 				logger.Warning("Non-standard tag found in component %s and no component present : %s; assuming Autonomous Custom Element", owner, dependencyName)
 			}
-			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates); err != nil {
+			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates, runtimeTree); err != nil {
 				return err
 			}
 			node = next
@@ -178,12 +194,12 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 			if !acceptsBody {
 				return fmt.Errorf("invalid use of component %s inside %s : component does not declare a default slot", node.Data, owner)
 			}
-			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates); err != nil {
+			if err := r.resolveNodes(node, owner, stack, instance, explicitTemplates, runtimeTree); err != nil {
 				return err
 			}
 		}
 
-		dependency, err := r.instantiate(dependencyName, node.Attr, htmlUtilities.GetAllChildren(node), stack)
+		dependency, err := r.instantiate(dependencyName, node.Attr, htmlUtilities.GetAllChildren(node), stack, runtimeTree)
 		if err != nil {
 			return err
 		}

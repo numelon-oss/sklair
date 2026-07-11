@@ -18,12 +18,13 @@ import (
 type documentDefinition struct {
 	plannedFile
 	root *html.Node
+	lua  *dynamicLuaDefinition
 }
 
 type componentDefinition struct {
-	head    []*html.Node
-	body    []*html.Node
-	dynamic bool
+	head []*html.Node
+	body []*html.Node
+	lua  *dynamicLuaDefinition
 }
 
 type componentDefinitions struct {
@@ -58,13 +59,15 @@ func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbo
 		if err != nil {
 			return nil, fmt.Errorf("could not parse file %s : %s", planned.source, err.Error())
 		}
-		if err := static.prepare(root, planned.source); err != nil {
+		dynamic, err := static.prepare(root, planned.source, false)
+		if err != nil {
 			return nil, fmt.Errorf("could not prepare document %s : %s", planned.source, err.Error())
 		}
 
 		documents = append(documents, documentDefinition{
 			plannedFile: planned,
 			root:        root,
+			lua:         dynamic,
 		})
 	}
 
@@ -90,7 +93,8 @@ func (d *componentDefinitions) prepare(name string) (*componentDefinition, disco
 	}
 
 	logger.Info("Preparing component %s...", name)
-	definition, err := prepareComponent(filepath.Join(d.root, source.Entry()), d.static)
+	_, runtimeTemplate := d.static.templates[name]
+	definition, err := prepareComponent(filepath.Join(d.root, source.Entry()), d.static, runtimeTemplate)
 	if err != nil {
 		return nil, discovery.ComponentSource{}, fmt.Errorf("could not prepare component %s : %s", source.Entry(), err.Error())
 	}
@@ -99,7 +103,7 @@ func (d *componentDefinitions) prepare(name string) (*componentDefinition, disco
 	return definition, source, nil
 }
 
-func prepareComponent(path string, static *staticLuaCompiler) (*componentDefinition, error) {
+func prepareComponent(path string, static *staticLuaCompiler, runtimeTemplate bool) (*componentDefinition, error) {
 	source, err := os.ReadFile(path)
 	if err != nil {
 		return nil, err
@@ -113,7 +117,8 @@ func prepareComponent(path string, static *staticLuaCompiler) (*componentDefinit
 	if err != nil {
 		return nil, err
 	}
-	if err := static.prepare(root, path); err != nil {
+	dynamic, err := static.prepare(root, path, runtimeTemplate)
+	if err != nil {
 		return nil, err
 	}
 
@@ -131,9 +136,9 @@ func prepareComponent(path string, static *staticLuaCompiler) (*componentDefinit
 	}
 
 	return &componentDefinition{
-		head:    htmlUtilities.GetAllChildren(head),
-		body:    htmlUtilities.GetAllChildren(body),
-		dynamic: bytes.Contains(source, []byte("<lua")),
+		head: htmlUtilities.GetAllChildren(head),
+		body: htmlUtilities.GetAllChildren(body),
+		lua:  dynamic,
 	}, nil
 }
 
