@@ -6,7 +6,6 @@ import (
 	"sort"
 	"strings"
 
-	lua "github.com/yuin/gopher-lua"
 	"golang.org/x/net/html"
 )
 
@@ -18,29 +17,33 @@ const (
 	dynamicProp
 )
 
-type componentProps struct {
-	values    map[string]string
+type boundProps struct {
+	values    map[string]sklairValue
 	kinds     map[string]propKind
 	declared  map[string]struct{}
 	signature string
 	open      bool
+	owner     string
 }
 
-func bind(nodes []*html.Node, attributes []html.Attribute, dynamic *dynamicLuaDefinition) (*componentProps, error) {
-	kinds := make(map[string]propKind)
-	for _, node := range nodes {
-		if err := inspectBindings(node, kinds); err != nil {
-			return nil, err
-		}
-	}
-
-	values := make(map[string]string, len(attributes))
+func bind(nodes []*html.Node, attributes []html.Attribute, dynamic *dynamicLuaDefinition) (*boundProps, error) {
+	values := make(map[string]sklairValue, len(attributes))
 	for _, attribute := range attributes {
 		name := strings.ToLower(attribute.Key)
 		if _, exists := values[name]; exists {
 			return nil, fmt.Errorf("prop %q is supplied more than once", name)
 		}
-		values[name] = attribute.Val
+		values[name] = sklairValue{kind: stringValue, string: attribute.Val}
+	}
+	return bindValues(nodes, values, dynamic, "component")
+}
+
+func bindValues(nodes []*html.Node, values map[string]sklairValue, dynamic *dynamicLuaDefinition, owner string) (*boundProps, error) {
+	kinds := make(map[string]propKind)
+	for _, node := range nodes {
+		if err := inspectBindings(node, kinds); err != nil {
+			return nil, err
+		}
 	}
 	declared := make(map[string]struct{}, len(kinds))
 	for name := range kinds {
@@ -57,7 +60,7 @@ func bind(nodes []*html.Node, attributes []html.Attribute, dynamic *dynamicLuaDe
 		}
 	}
 
-	props := &componentProps{values: values, kinds: kinds, declared: declared, open: open}
+	props := &boundProps{values: values, kinds: kinds, declared: declared, open: open, owner: owner}
 	if err := props.normalise(); err != nil {
 		return nil, err
 	}
@@ -134,7 +137,7 @@ func propName(value string) (string, error) {
 	return name, nil
 }
 
-func (p *componentProps) normalise() error {
+func (p *boundProps) normalise() error {
 	names := make([]string, 0, len(p.kinds)+len(p.values))
 	seen := make(map[string]struct{})
 	for name := range p.kinds {
@@ -152,49 +155,61 @@ func (p *componentProps) normalise() error {
 	for _, name := range names {
 		value, exists := p.values[name]
 		if p.kinds[name] == booleanProp {
-			boolean, err := booleanValue(value, exists)
+			boolean := false
+			var err error
+			if exists {
+				boolean, err = value.booleanBinding()
+			}
 			if err != nil {
 				return fmt.Errorf("invalid value for boolean prop %q : %s", name, err.Error())
 			}
-			value = fmt.Sprintf("%t", boolean)
+			value = sklairValue{kind: booleanValue, boolean: boolean}
 			exists = true
 		}
 
-		signature.WriteString(fmt.Sprintf("%d:%s:%t:%d:%s;", len(name), name, exists, len(value), value))
+		signature.WriteString(fmt.Sprintf("%d:%s:%t:", len(name), name, exists))
+		if exists {
+			value.appendSignature(&signature)
+		}
+		signature.WriteByte(';')
 	}
 
 	p.signature = signature.String()
 	return nil
 }
 
-func (p *componentProps) finish() error {
+func (p *boundProps) finish() error {
 	if p.open {
 		return nil
 	}
 	for name := range p.values {
 		if _, exists := p.declared[name]; !exists {
-			return fmt.Errorf("component does not accept prop %q", name)
+			return fmt.Errorf("%s does not accept prop %q", p.owner, name)
 		}
 	}
 	return nil
 }
 
-func (p *componentProps) luaValues() map[string]lua.LValue {
-	values := make(map[string]lua.LValue, len(p.values))
+func (p *boundProps) luaValues() map[string]any {
+	values := make(map[string]any, len(p.values))
 	for name, value := range p.values {
-		switch value {
-		case "", "true":
-			values[name] = lua.LTrue
-		case "false":
-			values[name] = lua.LFalse
-		default:
-			values[name] = lua.LString(value)
+		if value.kind == stringValue {
+			switch value.string {
+			case "", "true":
+				values[name] = true
+			case "false":
+				values[name] = false
+			default:
+				values[name] = value.string
+			}
+			continue
 		}
+		values[name] = value.luaValue()
 	}
 	return values
 }
 
-func (p *componentProps) bindEmitted(nodes []*html.Node) error {
+func (p *boundProps) bindEmitted(nodes []*html.Node) error {
 	kinds := make(map[string]propKind)
 	for _, node := range nodes {
 		if err := inspectBindings(node, kinds); err != nil {
@@ -216,22 +231,7 @@ func (p *componentProps) bindEmitted(nodes []*html.Node) error {
 	return nil
 }
 
-func booleanValue(value string, exists bool) (bool, error) {
-	if !exists {
-		return false, nil
-	}
-
-	switch strings.ToLower(strings.TrimSpace(value)) {
-	case "", "true":
-		return true, nil
-	case "false":
-		return false, nil
-	default:
-		return false, fmt.Errorf("expected an empty value, true, or false; got %q", value)
-	}
-}
-
-func bindNode(node *html.Node, props *componentProps) error {
+func bindNode(node *html.Node, props *boundProps) error {
 	if node.Type == html.ElementNode {
 		ifName := ""
 		textName := ""
@@ -270,7 +270,11 @@ func bindNode(node *html.Node, props *componentProps) error {
 
 		if ifName != "" {
 			value, exists := props.values[ifName]
-			keep, err := booleanValue(value, exists)
+			keep := false
+			var err error
+			if exists {
+				keep, err = value.booleanBinding()
+			}
 			if err != nil {
 				return fmt.Errorf("invalid value for boolean prop %q : %s", ifName, err.Error())
 			}
@@ -287,10 +291,18 @@ func bindNode(node *html.Node, props *componentProps) error {
 		sort.Strings(attributeNames)
 		for _, name := range attributeNames {
 			value, exists := props.values[attributeBindings[name]]
+			text := ""
+			var err error
+			if exists {
+				text, exists, err = value.scalarString()
+			}
+			if err != nil {
+				return fmt.Errorf("invalid value for prop %q : %s", attributeBindings[name], err.Error())
+			}
 			if !exists {
 				return fmt.Errorf("required prop %q was not supplied", attributeBindings[name])
 			}
-			htmlUtilities.SetAttribute(node, name, value)
+			htmlUtilities.SetAttribute(node, name, text)
 		}
 
 		classNames := make([]string, 0, len(classBindings))
@@ -300,7 +312,11 @@ func bindNode(node *html.Node, props *componentProps) error {
 		sort.Strings(classNames)
 		for _, name := range classNames {
 			value, exists := props.values[classBindings[name]]
-			enabled, err := booleanValue(value, exists)
+			enabled := false
+			var err error
+			if exists {
+				enabled, err = value.booleanBinding()
+			}
 			if err != nil {
 				return fmt.Errorf("invalid value for boolean prop %q : %s", classBindings[name], err.Error())
 			}
@@ -309,6 +325,14 @@ func bindNode(node *html.Node, props *componentProps) error {
 
 		if textName != "" {
 			value, exists := props.values[textName]
+			text := ""
+			var err error
+			if exists {
+				text, exists, err = value.scalarString()
+			}
+			if err != nil {
+				return fmt.Errorf("invalid value for prop %q : %s", textName, err.Error())
+			}
 			if !exists {
 				return fmt.Errorf("required prop %q was not supplied", textName)
 			}
@@ -317,7 +341,7 @@ func bindNode(node *html.Node, props *componentProps) error {
 				node.RemoveChild(child)
 				child = next
 			}
-			node.AppendChild(&html.Node{Type: html.TextNode, Data: value})
+			node.AppendChild(&html.Node{Type: html.TextNode, Data: text})
 			return nil
 		}
 	}

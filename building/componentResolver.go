@@ -83,7 +83,7 @@ func (r *componentResolver) instantiate(name string, attributes []html.Attribute
 	}
 
 	key := name
-	var props *componentProps
+	var props *boundProps
 	if !isRuntimeTemplate {
 		allNodes := append(htmlUtilities.GetAllChildren(head), htmlUtilities.GetAllChildren(body)...)
 		props, err = bind(allNodes, attributes, definition.lua)

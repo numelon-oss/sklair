@@ -46,7 +46,7 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 		componentFolders:   make(map[string]discovery.ComponentSource),
 	}
 	if definition.lua != nil {
-		props := &componentProps{values: make(map[string]string), kinds: make(map[string]propKind), declared: make(map[string]struct{})}
+		props := &boundProps{values: make(map[string]sklairValue), kinds: make(map[string]propKind), declared: make(map[string]struct{}), owner: "document"}
 		if err := resolver.definitions.static.runDynamic([]*html.Node{doc}, definition.lua, props, definition.source); err != nil {
 			return nil, err
 		}

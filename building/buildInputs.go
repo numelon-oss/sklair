@@ -14,6 +14,7 @@ import (
 type buildPaths struct {
 	input      string
 	components string
+	layouts    string
 	hooks      string
 	output     string
 	cache      string
@@ -25,6 +26,7 @@ type buildInputs struct {
 	paths      buildPaths
 	documents  *discovery.DocumentLists
 	components map[string]discovery.ComponentSource
+	layouts    map[string]string
 	hooks      *discovery.Hookset
 	templates  map[string]struct{}
 }
@@ -49,6 +51,12 @@ func discoverBuild(config *sklairConfig.ProjectConfig, configDir string, outputD
 		return nil, errors.New("could not scan components : " + err.Error())
 	}
 
+	logger.Info("Indexing layouts...")
+	layouts, err := discovery.DiscoverLayouts(paths.layouts)
+	if err != nil {
+		return nil, errors.New("could not scan layouts : " + err.Error())
+	}
+
 	templates, err := classifyTemplates(config.Templates, components)
 	if err != nil {
 		return nil, err
@@ -67,6 +75,7 @@ func discoverBuild(config *sklairConfig.ProjectConfig, configDir string, outputD
 		paths:      paths,
 		documents:  documents,
 		components: components,
+		layouts:    layouts,
 		hooks:      discoveredHooks,
 		templates:  templates,
 	}, nil
@@ -75,6 +84,7 @@ func discoverBuild(config *sklairConfig.ProjectConfig, configDir string, outputD
 func resolveBuildPaths(config *sklairConfig.ProjectConfig, configDir string, outputDirOverride string) buildPaths {
 	inputDir := filepath.Join(configDir, config.Input)
 	componentsDir := filepath.Join(configDir, config.Components)
+	layoutsDir := filepath.Join(configDir, config.Layouts)
 
 	hooksPath := ""
 	if config.Hooks != nil && config.Hooks.Enabled {
@@ -92,6 +102,7 @@ func resolveBuildPaths(config *sklairConfig.ProjectConfig, configDir string, out
 	return buildPaths{
 		input:      inputDir,
 		components: componentsDir,
+		layouts:    layoutsDir,
 		hooks:      hooksDir,
 		output:     outputDir,
 		cache:      filepath.Join(sklairDir, "cache"),
@@ -111,8 +122,13 @@ func buildExcludes(config *sklairConfig.ProjectConfig, paths buildPaths, outputO
 		return nil, errors.New("could not get relative path for hooks : " + err.Error())
 	}
 
+	layoutsRel, err := filepath.Rel(paths.input, paths.layouts)
+	if err != nil {
+		return nil, errors.New("could not get relative path for layouts : " + err.Error())
+	}
+
 	excludes := append([]string{}, config.Exclude...)
-	excludes = append(excludes, componentsRel, hooksRel)
+	excludes = append(excludes, componentsRel, layoutsRel, hooksRel)
 
 	if !outputOverridden {
 		outputRel, err := filepath.Rel(paths.input, paths.output)

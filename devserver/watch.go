@@ -67,12 +67,11 @@ func shouldWatch(path string) bool {
 }
 
 // track changes from the following directories:
-// - source directory (excluding components dir, if it is within the source directory)
-// OR if the components directory is within the source directory then just ONLY track the source directory anyways
-// - components directory by itself
+// - source directory
+// - component and layout directories which are not already within source
 // from all tracked directories, output dir must be excluded along with common excluded directories
 
-// TODO: dir parameter removed in favour of source and components dir and excludes list (when above changes are implemented)
+// TODO: paths should eventually be derived from resolved build inputs and excludes
 // also refer to commands/serve.go for more information
 func Watch(paths ...string) (<-chan bool, <-chan error) {
 	events := make(chan bool)

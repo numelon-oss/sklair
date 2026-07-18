@@ -88,6 +88,8 @@ type ProjectConfig struct {
 	Input string `json:"input,omitempty" jsonschema:"title=Input directory"`
 	// The directory where the project's components are stored.
 	Components string `json:"components,omitempty" jsonschema:"title=Components directory"`
+	// The directory where the project's full-document layouts are stored.
+	Layouts string `json:"layouts,omitempty" jsonschema:"title=Layouts directory"`
 
 	// A list of gitignore-style glob patterns that should be excluded from the build process.
 	Exclude []string `json:"exclude,omitempty" jsonschema:"title=Exclude patterns"`
@@ -132,6 +134,7 @@ var DefaultConfig = ProjectConfig{
 
 	Input:      "./src",
 	Components: "./components",
+	Layouts:    "./layouts",
 
 	Exclude:        []string{},
 	ExcludeCompile: []string{},

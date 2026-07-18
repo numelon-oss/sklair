@@ -14,7 +14,7 @@ import (
 	"github.com/numelon-oss/go-logger"
 )
 
-func getWatchPaths(src, components string) ([]string, error) {
+func getWatchPaths(src string, extraPaths ...string) ([]string, error) {
 	watchPaths := []string{src}
 
 	inputAbs, err := filepath.Abs(src)
@@ -22,16 +22,23 @@ func getWatchPaths(src, components string) ([]string, error) {
 		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", src, err)
 	}
 
-	componentsAbs, err := filepath.Abs(components)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", components, err)
-	}
+	for _, path := range extraPaths {
+		if _, err := os.Stat(path); os.IsNotExist(err) {
+			continue
+		} else if err != nil {
+			return nil, err
+		}
 
-	rel, err := filepath.Rel(inputAbs, componentsAbs)
+		absolute, err := filepath.Abs(path)
+		if err != nil {
+			return nil, fmt.Errorf("failed to resolve absolute path of %s: %w", path, err)
+		}
+		relative, err := filepath.Rel(inputAbs, absolute)
 
-	// components are NOT inside input
-	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
-		watchPaths = append(watchPaths, components)
+		// paths already beneath input are covered by its recursive watcher
+		if err != nil || relative == ".." || strings.HasPrefix(relative, ".."+string(filepath.Separator)) {
+			watchPaths = append(watchPaths, path)
+		}
 	}
 
 	return watchPaths, nil
@@ -119,7 +126,7 @@ func init() {
 			// for now: ENTIRE project is rebuild on change
 			// but in the future maybe only rebuild changed files: see comment at very top
 
-			watchPaths, err := getWatchPaths(config.Input, config.Components)
+			watchPaths, err := getWatchPaths(config.Input, config.Components, config.Layouts)
 			if err != nil {
 				logger.Error(err.Error())
 				return 1

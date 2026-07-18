@@ -37,6 +37,7 @@ type componentDefinitions struct {
 type definitionSet struct {
 	documents  []documentDefinition
 	components *componentDefinitions
+	layouts    *layoutDefinitions
 }
 
 func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbox.Runtime) (*definitionSet, error) {
@@ -79,6 +80,12 @@ func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbo
 			prepared: make(map[string]*componentDefinition),
 			static:   static,
 		},
+		layouts: &layoutDefinitions{
+			root:     inputs.paths.layouts,
+			sources:  inputs.layouts,
+			prepared: make(map[string]*layoutDefinition),
+			static:   static,
+		},
 	}, nil
 }
 
@@ -109,7 +116,7 @@ func prepareComponent(path string, static *staticLuaCompiler, runtimeTemplate bo
 		return nil, err
 	}
 
-	if err := naiveValidation(source); err != nil {
+	if err := naiveValidation(source, "component"); err != nil {
 		return nil, err
 	}
 
@@ -241,19 +248,19 @@ func findSklairBinding(nodes []*html.Node) string {
 // naiveValidation has one purpose:
 // if you tried to use this feature, you must at least LOOK like you used it correctly,
 // otherwise later stages will come back to bite you
-func naiveValidation(source []byte) error {
+func naiveValidation(source []byte, owner string) error {
 	// TODO: ensure these are only naively detected within comments
 	if bytes.Contains(source, []byte("sklair:ordering-barrier")) {
 		if !bytes.Contains(source, []byte("treat-as=")) {
-			return errors.New("ordering barrier missing treat-as= in component")
+			return fmt.Errorf("ordering barrier missing treat-as= in %s", owner)
 		}
 		if !bytes.Contains(source, []byte("sklair:ordering-barrier-end")) {
-			return errors.New("unterminated ordering barrier in component")
+			return fmt.Errorf("unterminated ordering barrier in %s", owner)
 		}
 	}
 
 	if bytes.Contains(source, []byte("sklair:remove")) && !bytes.Contains(source, []byte("sklair:remove-end")) {
-		return errors.New("unterminated remove directive in component")
+		return fmt.Errorf("unterminated remove directive in %s", owner)
 	}
 
 	return nil

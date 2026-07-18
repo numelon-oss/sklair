@@ -9,13 +9,15 @@ import (
 	"golang.org/x/net/html"
 )
 
-func (c *staticLuaCompiler) runDynamic(roots []*html.Node, definition *dynamicLuaDefinition, props *componentProps, source string) error {
+func (c *staticLuaCompiler) runDynamic(roots []*html.Node, definition *dynamicLuaDefinition, props *boundProps, source string) error {
 	if definition == nil {
 		return nil
 	}
 	emitter := &luaEmitter{}
 	scope := c.runtime.NewScope(luaSandbox.SandboxOptions{Profile: luaSandbox.InlineSandbox, FSContext: c.fsContext})
-	scope.SetReadOnly("props", props.luaValues())
+	if err := scope.SetReadOnly("props", props.luaValues()); err != nil {
+		return fmt.Errorf("could not expose props to dynamic Lua in %s : %s", source, err.Error())
+	}
 	openSklair(scope, emitter, c)
 
 	markers := make([]*html.Node, 0, len(definition.blocks))

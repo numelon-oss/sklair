@@ -3,7 +3,9 @@ package luaSandbox
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
+	"sort"
 	"strings"
 
 	lua "github.com/yuin/gopher-lua"
@@ -30,7 +32,12 @@ type Runtime struct {
 type Scope struct {
 	runtime  *Runtime
 	env      *lua.LTable
-	readOnly map[*lua.LTable]*lua.LTable
+	readOnly map[*lua.LTable]readOnlyTable
+}
+
+type readOnlyTable struct {
+	backing        *lua.LTable
+	foldStringKeys bool
 }
 
 type Result struct {
@@ -87,7 +94,7 @@ func (r *Runtime) NewScope(options SandboxOptions) *Scope {
 	}
 	env.RawSetString("fs", newFsModule(r.state, &options))
 
-	return &Scope{runtime: r, env: env, readOnly: make(map[*lua.LTable]*lua.LTable)}
+	return &Scope{runtime: r, env: env, readOnly: make(map[*lua.LTable]readOnlyTable)}
 }
 
 func cloneTable(L *lua.LState, source *lua.LTable) *lua.LTable {
@@ -105,38 +112,105 @@ func (s *Scope) SetModule(name string, functions map[string]lua.LGFunction) {
 	s.env.RawSetString(name, module)
 }
 
-func (s *Scope) SetReadOnly(name string, values map[string]lua.LValue) {
+func (s *Scope) SetReadOnly(name string, values map[string]any) error {
 	backing := s.runtime.state.NewTable()
-	for key, value := range values {
-		backing.RawSetString(key, value)
+	keys := sortedKeys(values)
+	for _, key := range keys {
+		value := values[key]
+		converted, err := s.readOnlyValue(name+"."+key, value)
+		if err != nil {
+			return err
+		}
+		backing.RawSetString(strings.ToLower(key), converted)
 	}
+	s.setReadOnly(name, backing, true)
+	return nil
+}
+
+func (s *Scope) readOnlyValue(name string, value any) (lua.LValue, error) {
+	switch value := value.(type) {
+	case nil:
+		return lua.LNil, nil
+	case bool:
+		return lua.LBool(value), nil
+	case string:
+		return lua.LString(value), nil
+	case float64:
+		return lua.LNumber(value), nil
+	case []any:
+		backing := s.runtime.state.NewTable()
+		for index, child := range value {
+			converted, err := s.readOnlyValue(fmt.Sprintf("%s[%d]", name, index+1), child)
+			if err != nil {
+				return nil, err
+			}
+			backing.RawSetInt(index+1, converted)
+		}
+		return s.readOnlyProxy(name, backing, false), nil
+	case map[string]any:
+		backing := s.runtime.state.NewTable()
+		keys := sortedKeys(value)
+		for _, key := range keys {
+			child := value[key]
+			converted, err := s.readOnlyValue(name+"."+key, child)
+			if err != nil {
+				return nil, err
+			}
+			backing.RawSetString(key, converted)
+		}
+		return s.readOnlyProxy(name, backing, false), nil
+	default:
+		return nil, fmt.Errorf("cannot expose %T as a read-only Lua value", value)
+	}
+}
+
+func sortedKeys(values map[string]any) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func (s *Scope) setReadOnly(name string, backing *lua.LTable, foldStringKeys bool) {
+	proxy := s.readOnlyProxy(name, backing, foldStringKeys)
+	s.env.RawSetString(name, proxy)
+	s.protectReadOnly(name)
+}
+
+func (s *Scope) readOnlyProxy(name string, backing *lua.LTable, foldStringKeys bool) *lua.LTable {
 	proxy := s.runtime.state.NewTable()
 	metatable := s.runtime.state.NewTable()
 	metatable.RawSetString("__index", s.runtime.state.NewFunction(func(L *lua.LState) int {
-		key, ok := L.Get(2).(lua.LString)
-		if !ok {
-			L.Push(lua.LNil)
-			return 1
+		key := L.Get(2)
+		if foldStringKeys {
+			if stringKey, ok := key.(lua.LString); ok {
+				key = lua.LString(strings.ToLower(string(stringKey)))
+			}
 		}
-		L.Push(backing.RawGetString(strings.ToLower(string(key))))
+		L.Push(backing.RawGet(key))
 		return 1
 	}))
 	metatable.RawSetString("__newindex", s.runtime.state.NewFunction(func(L *lua.LState) int {
 		L.RaiseError("%s is read-only", name)
 		return 0
 	}))
+	metatable.RawSetString("__len", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		L.Push(lua.LNumber(backing.Len()))
+		return 1
+	}))
 	metatable.RawSetString("__metatable", lua.LString("read-only "+name))
 	s.runtime.state.SetMetatable(proxy, metatable)
-	s.readOnly[proxy] = backing
-	s.env.RawSetString(name, proxy)
-	s.protectReadOnly(name)
+	s.readOnly[proxy] = readOnlyTable{backing: backing, foldStringKeys: foldStringKeys}
+	return proxy
 }
 
 func (s *Scope) protectReadOnly(name string) {
 	s.env.RawSetString("next", s.runtime.state.NewFunction(func(L *lua.LState) int {
 		table := L.CheckTable(1)
-		if backing := s.readOnly[table]; backing != nil {
-			table = backing
+		if readOnly, exists := s.readOnly[table]; exists {
+			table = readOnly.backing
 		}
 		key := lua.LNil
 		if L.GetTop() > 1 {
@@ -151,6 +225,27 @@ func (s *Scope) protectReadOnly(name string) {
 		L.Push(value)
 		return 2
 	}))
+	s.env.RawSetString("ipairs", s.runtime.state.NewFunction(func(L *lua.LState) int {
+		L.CheckTable(1)
+		iterator := s.runtime.state.NewFunction(func(L *lua.LState) int {
+			table := L.CheckTable(1)
+			index := L.CheckInt(2) + 1
+			if readOnly, exists := s.readOnly[table]; exists {
+				table = readOnly.backing
+			}
+			value := table.RawGetInt(index)
+			if value == lua.LNil {
+				return 0
+			}
+			L.Push(lua.LNumber(index))
+			L.Push(value)
+			return 2
+		})
+		L.Push(iterator)
+		L.Push(L.Get(1))
+		L.Push(lua.LNumber(0))
+		return 3
+	}))
 	s.env.RawSetString("pairs", s.runtime.state.NewFunction(func(L *lua.LState) int {
 		L.CheckTable(1)
 		L.Push(s.env.RawGetString("next"))
@@ -160,22 +255,23 @@ func (s *Scope) protectReadOnly(name string) {
 	}))
 	s.env.RawSetString("rawget", s.runtime.state.NewFunction(func(L *lua.LState) int {
 		table := L.CheckTable(1)
-		if backing := s.readOnly[table]; backing != nil {
-			key, ok := L.Get(2).(lua.LString)
-			if !ok {
-				L.Push(lua.LNil)
-				return 1
+		key := L.Get(2)
+		if readOnly, exists := s.readOnly[table]; exists {
+			if readOnly.foldStringKeys {
+				if stringKey, ok := key.(lua.LString); ok {
+					key = lua.LString(strings.ToLower(string(stringKey)))
+				}
 			}
-			L.Push(backing.RawGetString(strings.ToLower(string(key))))
+			L.Push(readOnly.backing.RawGet(key))
 			return 1
 		}
-		L.Push(table.RawGet(L.CheckAny(2)))
+		L.Push(table.RawGet(key))
 		return 1
 	}))
 	s.env.RawSetString("rawset", s.runtime.state.NewFunction(func(L *lua.LState) int {
 		table := L.CheckTable(1)
 		key := L.CheckAny(2)
-		if s.readOnly[table] != nil || table == s.env && key == lua.LString(name) {
+		if _, readOnly := s.readOnly[table]; readOnly || table == s.env && key == lua.LString(name) {
 			L.RaiseError("%s is read-only", name)
 			return 0
 		}
@@ -190,9 +286,11 @@ func (s *Scope) protectReadOnly(name string) {
 				continue
 			}
 			table.RawSetString(functionName, s.runtime.state.NewFunction(func(L *lua.LState) int {
-				if target, ok := L.Get(1).(*lua.LTable); ok && s.readOnly[target] != nil {
-					L.RaiseError("%s is read-only", name)
-					return 0
+				if target, ok := L.Get(1).(*lua.LTable); ok {
+					if _, readOnly := s.readOnly[target]; readOnly {
+						L.RaiseError("%s is read-only", name)
+						return 0
+					}
 				}
 				argumentCount := L.GetTop()
 				arguments := make([]lua.LValue, argumentCount)

@@ -68,6 +68,7 @@ func configurationSummary(cfg sklairConfig.ProjectConfig) {
 
 	preeeent("Input directory:", cfg.Input)
 	preeeent("Components directory:", cfg.Components)
+	preeeent("Layouts directory:", cfg.Layouts)
 
 	preeeent("Output directory:", cfg.Output)
 
@@ -113,6 +114,7 @@ func init() {
 
 			cfg.Input = askString("Where is your site source located?", cfg.Input)
 			cfg.Components = askString("Where are your components located?", cfg.Components)
+			cfg.Layouts = askString("Where are your layouts located?", cfg.Layouts)
 
 			fmt.Println(logger.Yellow + "File/folder exclusions (exclude field) cannot be configured using sklair init. You can edit them yourself in sklair.json.")
 			fmt.Println("Likewise with compiling exclusions (excludeCompile field)." + logger.Reset)
