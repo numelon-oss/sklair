@@ -159,11 +159,3 @@ func (d *layoutDefinitions) instantiate(name string, props map[string]sklairValu
 
 	return documentDefinition{plannedFile: planned, root: root}, nil
 }
-
-func compileLayout(definitions *definitionSet, templates map[string]struct{}, name string, props map[string]sklairValue, body []*html.Node, planned plannedFile) (*documentState, error) {
-	definition, err := definitions.layouts.instantiate(name, props, body, planned)
-	if err != nil {
-		return nil, err
-	}
-	return compileDocument(definition, newComponentResolver(definitions.components, templates))
-}

@@ -18,8 +18,7 @@ type renderRequest struct {
 	index  int
 }
 
-type generatedDocument struct {
-	plannedFile
+type generation struct {
 	layout string
 	body   string
 	props  map[string]sklairValue
@@ -85,7 +84,7 @@ func normaliseOutput(output string) (string, error) {
 	return normalised, nil
 }
 
-func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]generatedDocument, error) {
+func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]plannedDocument, error) {
 	if q.frozen {
 		return nil, fmt.Errorf("generated document queue is already frozen")
 	}
@@ -94,7 +93,7 @@ func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]ge
 	sort.SliceStable(q.requests, func(left int, right int) bool {
 		return q.requests[left].output < q.requests[right].output
 	})
-	generated := make([]generatedDocument, 0, len(q.requests))
+	generated := make([]plannedDocument, 0, len(q.requests))
 	for _, request := range q.requests {
 		output := filepath.Join(paths.output, filepath.FromSlash(request.output))
 		key := filepath.Clean(output)
@@ -110,11 +109,13 @@ func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]ge
 		}
 		owners[key] = description
 
-		generated = append(generated, generatedDocument{
+		generated = append(generated, plannedDocument{
 			plannedFile: plannedFile{source: provenance, output: output},
-			layout:      request.layout,
-			body:        request.body,
-			props:       request.props,
+			generation: &generation{
+				layout: request.layout,
+				body:   request.body,
+				props:  request.props,
+			},
 		})
 	}
 	return generated, nil

@@ -3,6 +3,7 @@ package building
 import (
 	"fmt"
 	"path/filepath"
+	"sort"
 	"strings"
 )
 
@@ -11,16 +12,20 @@ type plannedFile struct {
 	output string
 }
 
+type plannedDocument struct {
+	plannedFile
+	generation *generation
+}
+
 type buildPlan struct {
-	documents   []plannedFile
+	documents   []plannedDocument
 	staticFiles []plannedFile
-	generated   []generatedDocument
 }
 
 func planBuild(inputs *buildInputs, queue *documentQueue) (*buildPlan, error) {
 	owners := make(map[string]string, len(inputs.documents.HtmlFiles)+len(inputs.documents.StaticFiles))
 
-	documents, err := planFiles(inputs.documents.HtmlFiles, inputs.paths, owners)
+	sourceDocuments, err := planFiles(inputs.documents.HtmlFiles, inputs.paths, owners)
 	if err != nil {
 		return nil, err
 	}
@@ -34,11 +39,29 @@ func planBuild(inputs *buildInputs, queue *documentQueue) (*buildPlan, error) {
 		return nil, err
 	}
 
+	documents := make([]plannedDocument, 0, len(sourceDocuments)+len(generated))
+	for _, source := range sourceDocuments {
+		documents = append(documents, plannedDocument{plannedFile: source})
+	}
+	documents = append(documents, generated...)
+	sort.Slice(documents, func(left int, right int) bool {
+		return documents[left].output < documents[right].output
+	})
+
 	return &buildPlan{
 		documents:   documents,
 		staticFiles: staticFiles,
-		generated:   generated,
 	}, nil
+}
+
+func (p *buildPlan) generatedCount() int {
+	count := 0
+	for _, document := range p.documents {
+		if document.generation != nil {
+			count++
+		}
+	}
+	return count
 }
 
 func planFiles(files []string, paths buildPaths, owners map[string]string) ([]plannedFile, error) {

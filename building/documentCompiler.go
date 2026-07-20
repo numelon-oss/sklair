@@ -22,6 +22,13 @@ func compileDocuments(definitions *definitionSet, templates map[string]struct{})
 	documents := make([]*documentState, 0, len(definitions.documents))
 
 	for _, definition := range definitions.documents {
+		if definition.generation != nil {
+			var err error
+			definition, err = materialiseGenDocument(definition, definitions.layouts)
+			if err != nil {
+				return nil, err
+			}
+		}
 		document, err := compileDocument(definition, resolver)
 		if err != nil {
 			return nil, err
@@ -34,6 +41,9 @@ func compileDocuments(definitions *definitionSet, templates map[string]struct{})
 
 func compileDocument(definition documentDefinition, resolver *componentResolver) (*documentState, error) {
 	doc := definition.root
+	if err := bindDocument(doc, definition.lua, definition.source, resolver.definitions.static); err != nil {
+		return nil, err
+	}
 	head := htmlUtilities.FindTag(doc, "head")
 	body := htmlUtilities.FindTag(doc, "body")
 	if head == nil || body == nil {
@@ -45,13 +55,6 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 		templates:          make(map[string]*componentInstance),
 		componentFolders:   make(map[string]discovery.ComponentSource),
 	}
-	if definition.lua != nil {
-		props := &boundProps{values: make(map[string]sklairValue), kinds: make(map[string]propKind), declared: make(map[string]struct{}), owner: "document"}
-		if err := resolver.definitions.static.runDynamic([]*html.Node{doc}, definition.lua, props, definition.source); err != nil {
-			return nil, err
-		}
-	}
-
 	// usedComponents ensures each component and its recursive dependencies contribute
 	// their <head> nodes and folder assets at most once per document
 	usedComponents := make(map[string]struct{})
@@ -63,6 +66,17 @@ func compileDocument(definition documentDefinition, resolver *componentResolver)
 	logger.Info("Found %d tags to replace in %s", count, definition.source)
 
 	return state, nil
+}
+
+func bindDocument(root *html.Node, dynamic *dynamicLuaDefinition, source string, static *staticLuaCompiler) error {
+	props, err := bindValues(htmlUtilities.GetAllChildren(root), make(map[string]sklairValue), dynamic, "document")
+	if err != nil {
+		return fmt.Errorf("could not bind document %s : %s", source, err.Error())
+	}
+	if err := static.runDynamic([]*html.Node{root}, dynamic, props, source); err != nil {
+		return err
+	}
+	return nil
 }
 
 func compileDocumentNodes(

@@ -17,8 +17,9 @@ import (
 
 type documentDefinition struct {
 	plannedFile
-	root *html.Node
-	lua  *dynamicLuaDefinition
+	root       *html.Node
+	lua        *dynamicLuaDefinition
+	generation *generation
 }
 
 type componentDefinition struct {
@@ -56,6 +57,15 @@ func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbo
 	}
 	documents := make([]documentDefinition, 0, len(plan.documents))
 	for _, planned := range plan.documents {
+		if planned.generation != nil {
+			definition, err := prepareGenDocument(planned, static)
+			if err != nil {
+				return nil, err
+			}
+			documents = append(documents, definition)
+			continue
+		}
+
 		root, err := htmlUtilities.ParseFile(planned.source)
 		if err != nil {
 			return nil, fmt.Errorf("could not parse file %s : %s", planned.source, err.Error())
@@ -66,7 +76,7 @@ func prepareDefinitions(inputs *buildInputs, plan *buildPlan, runtime *luaSandbo
 		}
 
 		documents = append(documents, documentDefinition{
-			plannedFile: planned,
+			plannedFile: planned.plannedFile,
 			root:        root,
 			lua:         dynamic,
 		})

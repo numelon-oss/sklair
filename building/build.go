@@ -33,8 +33,8 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	if err != nil {
 		return err
 	}
-	if len(plan.generated) > 0 {
-		logger.Info("Planned %d generated documents", len(plan.generated))
+	if generated := plan.generatedCount(); generated > 0 {
+		logger.Info("Planned %d generated documents", generated)
 	}
 
 	compilationStart := time.Now()
@@ -74,7 +74,7 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	postHookEnd := time.Since(postHookStart)
 
 	//logger.EmptyLine()
-	logger.Info("Compilation (including writes) of %d files : %s", len(plan.documents), processingEnd)
+	logger.Info("Compilation (including writes) of %d documents (%d generated) : %s", len(plan.documents), plan.generatedCount(), processingEnd)
 	logger.Info("Static copy of %d files : %s", len(plan.staticFiles), staticEnd)
 	if inputs.hooks != nil {
 		logger.Info("Run time of %d pre-build hooks : %s", len(inputs.hooks.PreBuild), preHookEnd)
