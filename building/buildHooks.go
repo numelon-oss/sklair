@@ -22,7 +22,7 @@ func resetHookWorkspace(paths buildPaths) error {
 	return nil
 }
 
-func runPreHooks(inputs *buildInputs, runtime *luaSandbox.Runtime) error {
+func runPreHooks(inputs *buildInputs, runtime *luaSandbox.Runtime, documents *documentQueue) error {
 	if inputs.hooks == nil {
 		return nil
 	}
@@ -35,6 +35,8 @@ func runPreHooks(inputs *buildInputs, runtime *luaSandbox.Runtime) error {
 		GeneratedDir: inputs.paths.generated,
 		BuiltDir:     inputs.paths.output,
 		Mode:         luaSandbox.HookModePre,
+	}, func(scope *luaSandbox.Scope, hook string) {
+		openDocuments(scope, documents, hook)
 	}); err != nil {
 		return fmt.Errorf("could not run pre-build hooks : %s", err.Error())
 	}
@@ -70,7 +72,7 @@ func runPostHooks(inputs *buildInputs, runtime *luaSandbox.Runtime) error {
 		GeneratedDir: buildSklairDir,
 		BuiltDir:     inputs.paths.output,
 		Mode:         luaSandbox.HookModePost,
-	}); err != nil {
+	}, nil); err != nil {
 		return fmt.Errorf("could not run post-build hooks : %s", err.Error())
 	}
 

@@ -14,9 +14,10 @@ type plannedFile struct {
 type buildPlan struct {
 	documents   []plannedFile
 	staticFiles []plannedFile
+	generated   []generatedDocument
 }
 
-func planBuild(inputs *buildInputs) (*buildPlan, error) {
+func planBuild(inputs *buildInputs, queue *documentQueue) (*buildPlan, error) {
 	owners := make(map[string]string, len(inputs.documents.HtmlFiles)+len(inputs.documents.StaticFiles))
 
 	documents, err := planFiles(inputs.documents.HtmlFiles, inputs.paths, owners)
@@ -28,10 +29,15 @@ func planBuild(inputs *buildInputs) (*buildPlan, error) {
 	if err != nil {
 		return nil, err
 	}
+	generated, err := queue.freeze(inputs.paths, owners)
+	if err != nil {
+		return nil, err
+	}
 
 	return &buildPlan{
 		documents:   documents,
 		staticFiles: staticFiles,
+		generated:   generated,
 	}, nil
 }
 

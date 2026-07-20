@@ -126,14 +126,10 @@ func validateLayoutSlot(head *html.Node, body *html.Node) error {
 	return nil
 }
 
-func (d *layoutDefinitions) instantiate(name string, values map[string]any, projectedBody []*html.Node, planned plannedFile) (documentDefinition, error) {
+func (d *layoutDefinitions) instantiate(name string, props map[string]sklairValue, projectedBody []*html.Node, planned plannedFile) (documentDefinition, error) {
 	definition, err := d.prepare(name)
 	if err != nil {
 		return documentDefinition{}, err
-	}
-	owned, err := ownValues(values)
-	if err != nil {
-		return documentDefinition{}, fmt.Errorf("could not prepare layout %s props : %s", name, err.Error())
 	}
 
 	root := htmlUtilities.Clone(definition.root)
@@ -143,14 +139,14 @@ func (d *layoutDefinitions) instantiate(name string, values map[string]any, proj
 		return documentDefinition{}, fmt.Errorf("could not find head or body tags in layout %s after cloning", name)
 	}
 
-	props, err := bindValues(htmlUtilities.GetAllChildren(root), owned, definition.lua, "layout")
+	bound, err := bindValues(htmlUtilities.GetAllChildren(root), props, definition.lua, "layout")
 	if err != nil {
 		return documentDefinition{}, fmt.Errorf("could not bind layout %s : %s", name, err.Error())
 	}
-	if err := d.static.runDynamic([]*html.Node{root}, definition.lua, props, definition.source); err != nil {
+	if err := d.static.runDynamic([]*html.Node{root}, definition.lua, bound, definition.source); err != nil {
 		return documentDefinition{}, err
 	}
-	if err := props.normalise(); err != nil {
+	if err := bound.normalise(); err != nil {
 		return documentDefinition{}, fmt.Errorf("could not normalise layout %s props : %s", name, err.Error())
 	}
 
@@ -164,7 +160,7 @@ func (d *layoutDefinitions) instantiate(name string, values map[string]any, proj
 	return documentDefinition{plannedFile: planned, root: root}, nil
 }
 
-func compileLayout(definitions *definitionSet, templates map[string]struct{}, name string, props map[string]any, body []*html.Node, planned plannedFile) (*documentState, error) {
+func compileLayout(definitions *definitionSet, templates map[string]struct{}, name string, props map[string]sklairValue, body []*html.Node, planned plannedFile) (*documentState, error) {
 	definition, err := definitions.layouts.instantiate(name, props, body, planned)
 	if err != nil {
 		return nil, err

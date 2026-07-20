@@ -2,7 +2,6 @@ package building
 
 import (
 	"fmt"
-	"math"
 	"sort"
 	"strconv"
 	"strings"
@@ -26,89 +25,6 @@ type sklairValue struct {
 	number  float64
 	array   []sklairValue
 	object  map[string]sklairValue
-}
-
-func ownValue(value any) (sklairValue, error) {
-	switch value := value.(type) {
-	case nil:
-		return sklairValue{kind: nilValue}, nil
-	case bool:
-		return sklairValue{kind: booleanValue, boolean: value}, nil
-	case string:
-		return sklairValue{kind: stringValue, string: value}, nil
-	case int:
-		return finiteNumber(float64(value))
-	case int8:
-		return finiteNumber(float64(value))
-	case int16:
-		return finiteNumber(float64(value))
-	case int32:
-		return finiteNumber(float64(value))
-	case int64:
-		return finiteNumber(float64(value))
-	case uint:
-		return finiteNumber(float64(value))
-	case uint8:
-		return finiteNumber(float64(value))
-	case uint16:
-		return finiteNumber(float64(value))
-	case uint32:
-		return finiteNumber(float64(value))
-	case uint64:
-		return finiteNumber(float64(value))
-	case float32:
-		return finiteNumber(float64(value))
-	case float64:
-		return finiteNumber(value)
-	case []any:
-		array := make([]sklairValue, len(value))
-		for index, child := range value {
-			owned, err := ownValue(child)
-			if err != nil {
-				return sklairValue{}, fmt.Errorf("array item %d : %s", index+1, err.Error())
-			}
-			array[index] = owned
-		}
-		return sklairValue{kind: arrayValue, array: array}, nil
-	case map[string]any:
-		object := make(map[string]sklairValue, len(value))
-		for key, child := range value {
-			owned, err := ownValue(child)
-			if err != nil {
-				return sklairValue{}, fmt.Errorf("object field %q : %s", key, err.Error())
-			}
-			object[key] = owned
-		}
-		return sklairValue{kind: objectValue, object: object}, nil
-	default:
-		return sklairValue{}, fmt.Errorf("unsupported Sklair value %T", value)
-	}
-}
-
-func finiteNumber(value float64) (sklairValue, error) {
-	if math.IsNaN(value) || math.IsInf(value, 0) {
-		return sklairValue{}, fmt.Errorf("number must be finite")
-	}
-	return sklairValue{kind: numberValue, number: value}, nil
-}
-
-func ownValues(values map[string]any) (map[string]sklairValue, error) {
-	owned := make(map[string]sklairValue, len(values))
-	for suppliedName, value := range values {
-		name, err := propName(suppliedName)
-		if err != nil {
-			return nil, err
-		}
-		if _, exists := owned[name]; exists {
-			return nil, fmt.Errorf("prop %q is supplied more than once", name)
-		}
-		ownedValue, err := ownValue(value)
-		if err != nil {
-			return nil, fmt.Errorf("invalid prop %q : %s", name, err.Error())
-		}
-		owned[name] = ownedValue
-	}
-	return owned, nil
 }
 
 func (v sklairValue) scalarString() (string, bool, error) {

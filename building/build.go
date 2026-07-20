@@ -21,16 +21,20 @@ func Build(config *sklairConfig.ProjectConfig, configDir string, outputDirOverri
 	}
 	luaRuntime := luaSandbox.NewRuntime()
 	defer luaRuntime.Close()
+	documentQueue := newDocumentQueue(inputs.layouts)
 
 	preHookStart := time.Now()
-	if err := runPreHooks(inputs, luaRuntime); err != nil {
+	if err := runPreHooks(inputs, luaRuntime, documentQueue); err != nil {
 		return err
 	}
 	preHookEnd := time.Since(preHookStart)
 
-	plan, err := planBuild(inputs)
+	plan, err := planBuild(inputs, documentQueue)
 	if err != nil {
 		return err
+	}
+	if len(plan.generated) > 0 {
+		logger.Info("Planned %d generated documents", len(plan.generated))
 	}
 
 	compilationStart := time.Now()

@@ -8,7 +8,7 @@ import (
 	"sklair/luaSandbox"
 )
 
-func RunHooks(runtime *luaSandbox.Runtime, hooksDir string, hooks []string, ctx *luaSandbox.FSContext) error {
+func RunHooks(runtime *luaSandbox.Runtime, hooksDir string, hooks []string, ctx *luaSandbox.FSContext, configure func(*luaSandbox.Scope, string)) error {
 	which := "pre"
 	if ctx.Mode == luaSandbox.HookModePost {
 		which = "post"
@@ -22,6 +22,9 @@ func RunHooks(runtime *luaSandbox.Runtime, hooksDir string, hooks []string, ctx 
 			FSContext: *ctx,
 			Profile:   luaSandbox.HookSandbox,
 		})
+		if configure != nil {
+			configure(scope, hookFilename)
+		}
 		source, err := os.ReadFile(sourcePath)
 		if err != nil {
 			return fmt.Errorf("hook %s failed\n%s", hookFilename, err.Error())
