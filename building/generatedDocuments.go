@@ -53,12 +53,21 @@ func materialiseGenDocument(definition documentDefinition, layouts *layoutDefini
 		return documentDefinition{}, fmt.Errorf("could not compile generated document %s : %s", definition.source, err.Error())
 	}
 
-	return layouts.instantiate(
+	materialised, err := layouts.instantiate(
 		definition.generation.layout,
 		definition.generation.props,
 		htmlUtilities.GetAllChildren(body),
 		definition.plannedFile,
 	)
+	if err != nil {
+		return documentDefinition{}, fmt.Errorf(
+			"could not apply layout %s to generated document %s : %w",
+			definition.generation.layout,
+			definition.source,
+			err,
+		)
+	}
+	return materialised, nil
 }
 
 func validateGenBodySource(source []byte) error {

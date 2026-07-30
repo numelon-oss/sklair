@@ -189,7 +189,7 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 			}
 			acceptsBody, err := r.acceptsBody(dependencyName)
 			if err != nil {
-				return err
+				return fmt.Errorf("could not resolve component %s inside %s : %w", node.Data, owner, err)
 			}
 			if !acceptsBody {
 				return fmt.Errorf("invalid use of component %s inside %s : component does not declare a default slot", node.Data, owner)
@@ -201,7 +201,7 @@ func (r *componentResolver) resolveNodes(parent *html.Node, owner string, stack 
 
 		dependency, err := r.instantiate(dependencyName, node.Attr, htmlUtilities.GetAllChildren(node), stack, runtimeTree)
 		if err != nil {
-			return err
+			return fmt.Errorf("could not resolve component %s inside %s : %w", node.Data, owner, err)
 		}
 		instance.Dependencies = append(instance.Dependencies, dependency)
 

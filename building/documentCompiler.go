@@ -117,7 +117,7 @@ func compileDocumentNodes(
 				}
 				acceptsBody, err := resolver.acceptsBody(tag)
 				if err != nil {
-					return err
+					return fmt.Errorf("could not resolve component %s in %s : %w", node.Data, source, err)
 				}
 				if !acceptsBody {
 					return fmt.Errorf("invalid use of component %s in %s : component does not declare a default slot", node.Data, source)
@@ -129,7 +129,7 @@ func compileDocumentNodes(
 
 			resolved, err := resolver.Instantiate(tag, node.Attr, htmlUtilities.GetAllChildren(node))
 			if err != nil {
-				return fmt.Errorf("could not resolve component %s : %s", node.Data, err.Error())
+				return fmt.Errorf("could not resolve component %s in %s : %w", node.Data, source, err)
 			}
 			contributeComponent(resolved, resolver, head, usedComponents, state.componentFolders)
 
@@ -150,15 +150,6 @@ func compileDocumentNodes(
 		}
 
 		switch tag {
-		case "lua":
-			(*count)++
-			// TODO: prints from lua will be appended to a buffer
-			// then this buffer will be parsed by html
-			// then this will be inserted into document
-			// TODO: or should we actually instead expose a library eg `sklair` and we can do `sklair.put()`? thats probably cleaner
-			// and also easier to implement
-			logger.Warning("Lua components for regular input files are not implemented yet, skipping...")
-
 		case "opengraph":
 			(*count)++
 			for _, child := range snippets.OpenGraph(node) {
