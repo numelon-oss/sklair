@@ -27,6 +27,33 @@ type sklairValue struct {
 	object  map[string]sklairValue
 }
 
+func structuredSklairValue(value any) sklairValue {
+	switch value := value.(type) {
+	case nil:
+		return sklairValue{kind: nilValue}
+	case bool:
+		return sklairValue{kind: booleanValue, boolean: value}
+	case string:
+		return sklairValue{kind: stringValue, string: value}
+	case float64:
+		return sklairValue{kind: numberValue, number: value}
+	case []any:
+		array := make([]sklairValue, len(value))
+		for index, child := range value {
+			array[index] = structuredSklairValue(child)
+		}
+		return sklairValue{kind: arrayValue, array: array}
+	case map[string]any:
+		object := make(map[string]sklairValue, len(value))
+		for key, child := range value {
+			object[key] = structuredSklairValue(child)
+		}
+		return sklairValue{kind: objectValue, object: object}
+	default:
+		panic(fmt.Sprintf("unsupported structured Sklair value %T", value))
+	}
+}
+
 func (v sklairValue) scalarString() (string, bool, error) {
 	switch v.kind {
 	case nilValue:

@@ -18,6 +18,13 @@ const (
 	InlineSandbox
 )
 
+type HookMode uint8
+
+const (
+	HookModePre HookMode = iota
+	HookModePost
+)
+
 type SandboxOptions struct {
 	FSContext FSContext
 	Profile   SandboxProfile
@@ -30,9 +37,12 @@ type Runtime struct {
 }
 
 type Scope struct {
-	runtime  *Runtime
-	env      *lua.LTable
-	readOnly map[*lua.LTable]readOnlyTable
+	runtime    *Runtime
+	env        *lua.LTable
+	options    SandboxOptions
+	readOnly   map[*lua.LTable]readOnlyTable
+	tableKinds map[*lua.LTable]tableKind
+	jsonNull   *lua.LUserData
 }
 
 type readOnlyTable struct {
@@ -62,8 +72,6 @@ func NewRuntime() *Runtime {
 	L.SetContext(context.Background())
 
 	OpenSandboxedDefault(L, runtime)
-	OpenSandboxedCustom(L)
-
 	return runtime
 }
 
@@ -87,14 +95,24 @@ func (r *Runtime) NewScope(options SandboxOptions) *Scope {
 	metatable.RawSetString("__metatable", lua.LString("Sklair scope"))
 	r.state.SetMetatable(env, metatable)
 	env.RawSetString("_G", env)
-	for _, name := range []string{"table", "os", "string", "math", "json"} {
+	for _, name := range []string{"table", "os", "string", "math"} {
 		if shared, ok := r.state.GetGlobal(name).(*lua.LTable); ok {
 			env.RawSetString(name, cloneTable(r.state, shared))
 		}
 	}
 	env.RawSetString("fs", newFsModule(r.state, &options))
 
-	return &Scope{runtime: r, env: env, readOnly: make(map[*lua.LTable]readOnlyTable)}
+	scope := &Scope{
+		runtime:    r,
+		env:        env,
+		options:    options,
+		readOnly:   make(map[*lua.LTable]readOnlyTable),
+		tableKinds: make(map[*lua.LTable]tableKind),
+	}
+	scope.openJSON()
+	scope.openMarkdown()
+	scope.openSchema()
+	return scope
 }
 
 func cloneTable(L *lua.LState, source *lua.LTable) *lua.LTable {
@@ -114,6 +132,7 @@ func (s *Scope) SetModule(name string, functions map[string]lua.LGFunction) {
 
 func (s *Scope) SetReadOnly(name string, values map[string]any) error {
 	backing := s.runtime.state.NewTable()
+	s.tableKinds[backing] = objectTable
 	keys := sortedKeys(values)
 	for _, key := range keys {
 		value := values[key]
@@ -139,6 +158,7 @@ func (s *Scope) readOnlyValue(name string, value any) (lua.LValue, error) {
 		return lua.LNumber(value), nil
 	case []any:
 		backing := s.runtime.state.NewTable()
+		s.tableKinds[backing] = arrayTable
 		for index, child := range value {
 			converted, err := s.readOnlyValue(fmt.Sprintf("%s[%d]", name, index+1), child)
 			if err != nil {
@@ -149,6 +169,7 @@ func (s *Scope) readOnlyValue(name string, value any) (lua.LValue, error) {
 		return s.readOnlyProxy(name, backing, false), nil
 	case map[string]any:
 		backing := s.runtime.state.NewTable()
+		s.tableKinds[backing] = objectTable
 		keys := sortedKeys(value)
 		for _, key := range keys {
 			child := value[key]
@@ -203,6 +224,9 @@ func (s *Scope) readOnlyProxy(name string, backing *lua.LTable, foldStringKeys b
 	metatable.RawSetString("__metatable", lua.LString("read-only "+name))
 	s.runtime.state.SetMetatable(proxy, metatable)
 	s.readOnly[proxy] = readOnlyTable{backing: backing, foldStringKeys: foldStringKeys}
+	if kind := s.tableKinds[backing]; kind != unknownTable {
+		s.tableKinds[proxy] = kind
+	}
 	return proxy
 }
 
