@@ -18,7 +18,7 @@ type ObfuscateJS struct {
 }
 
 type PreventFOUC struct {
-	// Whether sklair should help prevent Flash Of Unstyled Content (FOUC).
+	// Whether Sklair should help prevent Flash Of Unstyled Content (FOUC).
 	Enabled bool `json:"enabled,omitempty" jsonschema:"title=Prevent FOUC"`
 
 	// The colour of the FOUC prevention overlay, shown before the page is fully loaded.
@@ -96,19 +96,19 @@ type ProjectConfig struct {
 	// A list of gitignore-style glob patterns that should be excluded from the compilation process.
 	ExcludeCompile []string `json:"excludeCompile,omitempty" jsonschema:"title=Exclude patterns for compiling"`
 
-	// The directory where the built project should be written to.
+	// The directory where the built project should be written.
 	Output string `json:"output,omitempty" jsonschema:"title=Output directory"`
 
-	// Whether HTML files should be minified during the build process.
+	// Whether HTML files should be minified.
 	//
-	// This field does not affect output at the moment as it is intended for the future.
+	// TODO: feature
 	Minify bool `json:"minify,omitempty" jsonschema:"title=Minify HTML"`
-	// Options for JavaScript obfuscation during the build process.
+	// Options reserved for JavaScript obfuscation.
 	//
-	// This field does not affect output at the moment as it is intended for the future.
+	// TODO: feature. perhaps sklair extensions for both obfuscation and minification; dont include in sklari core
 	ObfuscateJS *ObfuscateJS `json:"obfuscateJS,omitempty" jsonschema:"title=Obfuscate JavaScript"`
 
-	// Options for preventing Flash Of Unstyled Content (FOUC) in the final outputted HTML.
+	// Options for preventing Flash Of Unstyled Content (FOUC) in the resulting HTML.
 	PreventFOUC *PreventFOUC `json:"preventFOUC,omitempty" jsonschema:"title=Prevent FOUC"`
 	// Components that compile into native browser templates when used in a document.
 	// Sklair Runtime is not included if this field is omitted.
@@ -188,16 +188,7 @@ var SchemaURL string
 
 func init() {
 	regularVersion := constants.Version
-	versionPath := regularVersion
-
-	if regularVersion == "development" {
-		versionPath = "latest/download"
-		regularVersion = "development"
-	} else {
-		versionPath = "download/" + versionPath
-	}
-
-	SchemaURL = "https://github.com/numelon-oss/sklair/releases/" + versionPath + "/sklair-" + regularVersion + ".schema.json" // TODO: change to sklair.numelon.com
+	SchemaURL = "https://sklair.numelon.com/schema/sklair-" + regularVersion + ".schema.json"
 
 	DefaultConfig.SchemaURL = SchemaURL
 }

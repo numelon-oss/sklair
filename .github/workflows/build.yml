@@ -132,6 +132,55 @@ jobs:
                   name: sklair-${{ matrix.os }}-${{ matrix.arch }}
                   path: dist/*
 
+    website:
+        needs:
+            - release-notes-check
+            - schema
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version: "1.25"
+
+            - name: Download generated schema
+              uses: actions/download-artifact@v7
+              with:
+                  name: sklair-schema
+                  path: schema-dist
+
+            - name: Build website from the generated schema
+              run: |
+                  set -euo pipefail
+
+                  SCHEMA_FILE=$(find schema-dist -maxdepth 1 -type f -name 'sklair-*.schema.json' -print -quit)
+                  if [ -z "$SCHEMA_FILE" ]; then
+                    echo "The schema job did not produce a Sklair schema"
+                    exit 1
+                  fi
+
+                  cp "$SCHEMA_FILE" src/schema/sklair.schema.json
+
+                  if [ "${{ github.ref_type }}" = "tag" ]; then
+                    VERSION="${{ github.ref_name }}"
+                  else
+                    VERSION="development"
+                  fi
+
+                  go run \
+                    -ldflags "-X sklair/constants.Version=$VERSION" \
+                    . build
+
+            - name: Upload website artefact
+              uses: actions/upload-artifact@v6
+              with:
+                  name: website-build
+                  path: src/build
+
     release:
         needs:
             - release-notes-check
@@ -146,6 +195,7 @@ jobs:
               uses: actions/download-artifact@v7
               with:
                   path: dist
+                  pattern: sklair-*
 
             - name: Create release
               uses: softprops/action-gh-release@v2
