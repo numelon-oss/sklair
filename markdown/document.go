@@ -13,9 +13,9 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var safeRenderer = goldmark.New(goldmark.WithExtensions(extension.GFM))
+var safeRenderer = goldmark.New(goldmark.WithExtensions(extension.GFM, inlineCodeExtension{}))
 var rawRenderer = goldmark.New(
-	goldmark.WithExtensions(extension.GFM),
+	goldmark.WithExtensions(extension.GFM, inlineCodeExtension{}),
 	goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
 )
 
@@ -23,6 +23,7 @@ type Document struct {
 	source   []byte
 	root     ast.Node
 	headings []Heading
+	sections []Section
 }
 
 type Heading struct {
@@ -31,11 +32,19 @@ type Heading struct {
 	ID    string
 }
 
+type Section struct {
+	Level int
+	Title string
+	ID    string
+	Text  string
+}
+
 func Parse(source string) *Document {
 	content := []byte(source)
 	root := safeRenderer.Parser().Parse(text.NewReader(content))
 	document := &Document{source: content, root: root}
 	document.headings = prepareHeadings(root, content)
+	document.sections = prepareSections(root, content, document.headings)
 	return document
 }
 
@@ -55,6 +64,85 @@ func (d *Document) Headings() []Heading {
 	return append([]Heading(nil), d.headings...)
 }
 
+func (d *Document) Sections() []Section {
+	return append([]Section(nil), d.sections...)
+}
+
+func prepareSections(root ast.Node, source []byte, headings []Heading) []Section {
+	sections := make([]Section, 0, len(headings))
+	headingIndex := 0
+
+	for node := root.FirstChild(); node != nil; node = node.NextSibling() {
+		if _, ok := node.(*ast.Heading); ok {
+			heading := headings[headingIndex]
+			sections = append(sections, Section{
+				Level: heading.Level,
+				Title: heading.Title,
+				ID:    heading.ID,
+			})
+			headingIndex++
+			continue
+		}
+		if len(sections) == 0 {
+			continue
+		}
+
+		text := plainText(node, source)
+		if text == "" {
+			continue
+		}
+		section := &sections[len(sections)-1]
+		if section.Text != "" {
+			section.Text += " "
+		}
+		section.Text += text
+	}
+
+	return sections
+}
+
+func plainText(root ast.Node, source []byte) string {
+	var output strings.Builder
+	appendText := func(value []byte) {
+		if len(value) == 0 {
+			return
+		}
+		if output.Len() > 0 {
+			output.WriteByte(' ')
+		}
+		output.Write(value)
+	}
+
+	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch value := node.(type) {
+		case *ast.CodeBlock:
+			appendText(value.Text(source))
+			return ast.WalkSkipChildren, nil
+		case *ast.FencedCodeBlock:
+			appendText(value.Text(source))
+			return ast.WalkSkipChildren, nil
+		case *ast.CodeSpan:
+			text := codeSpanText(value, source)
+			_, code, highlighted := highlightedCode(text)
+			if highlighted {
+				text = code
+			}
+			appendText([]byte(text))
+			return ast.WalkSkipChildren, nil
+		case *ast.Text:
+			appendText(value.Segment.Value(source))
+		case *ast.String:
+			appendText(value.Value)
+		}
+		return ast.WalkContinue, nil
+	})
+
+	return strings.Join(strings.Fields(output.String()), " ")
+}
+
 func prepareHeadings(root ast.Node, source []byte) []Heading {
 	headings := make([]Heading, 0)
 	used := make(map[string]struct{})
@@ -66,13 +154,41 @@ func prepareHeadings(root ast.Node, source []byte) []Heading {
 		if !ok {
 			return ast.WalkContinue, nil
 		}
-		title := strings.Join(strings.Fields(string(heading.Text(source))), " ")
+		title := headingText(heading, source)
 		id := uniqueID(headingID(title), used)
 		heading.SetAttribute([]byte("id"), []byte(id))
 		headings = append(headings, Heading{Level: heading.Level, Title: title, ID: id})
 		return ast.WalkContinue, nil
 	})
 	return headings
+}
+
+func headingText(root ast.Node, source []byte) string {
+	var output strings.Builder
+	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		switch value := node.(type) {
+		case *ast.CodeSpan:
+			text := codeSpanText(value, source)
+			_, code, highlighted := highlightedCode(text)
+			if highlighted {
+				text = code
+			}
+			output.WriteString(text)
+			return ast.WalkSkipChildren, nil
+		case *ast.Text:
+			output.Write(value.Segment.Value(source))
+			if value.SoftLineBreak() || value.HardLineBreak() {
+				output.WriteByte(' ')
+			}
+		case *ast.String:
+			output.Write(value.Value)
+		}
+		return ast.WalkContinue, nil
+	})
+	return strings.Join(strings.Fields(output.String()), " ")
 }
 
 func headingID(title string) string {

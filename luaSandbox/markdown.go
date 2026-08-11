@@ -21,6 +21,7 @@ func (s *Scope) openMarkdown() {
 	methods := L.NewTable()
 	L.SetFuncs(methods, map[string]lua.LGFunction{
 		"headings": markdownHeadings,
+		"sections": markdownSections,
 		"to_html":  markdownToHTML,
 	})
 	metatable.RawSetString("__index", methods)
@@ -124,6 +125,28 @@ func markdownHeadings(L *lua.LState) int {
 		headings.Append(item)
 	}
 	L.Push(headings)
+	return 1
+}
+
+func markdownSections(L *lua.LState) int {
+	if L.GetTop() != 1 {
+		L.RaiseError("Markdown document sections expects no arguments")
+		return 0
+	}
+	document := checkMarkdownDocument(L, 1)
+	documentSections := document.document.Sections()
+	sections := L.CreateTable(len(documentSections), 0)
+	document.scope.tableKinds[sections] = arrayTable
+	for _, section := range documentSections {
+		item := L.CreateTable(0, 4)
+		document.scope.tableKinds[item] = objectTable
+		item.RawSetString("level", lua.LNumber(section.Level))
+		item.RawSetString("title", lua.LString(section.Title))
+		item.RawSetString("id", lua.LString(section.ID))
+		item.RawSetString("text", lua.LString(section.Text))
+		sections.Append(item)
+	}
+	L.Push(sections)
 	return 1
 }
 
