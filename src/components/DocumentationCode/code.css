@@ -1,0 +1,130 @@
+.documentation-article pre {
+    border-radius: 3px;
+}
+
+.documentation-code-block {
+    position: relative;
+    margin: 0 0 1.4rem;
+}
+
+.documentation-code-block pre {
+    margin: 0;
+    padding-top: 3.5rem;
+}
+
+.documentation-code-block__copy {
+    position: absolute;
+    z-index: 1;
+    top: 0.7rem;
+    right: 0.7rem;
+    min-width: 4.25rem;
+    min-height: 2rem;
+    padding: 0.35rem 0.65rem;
+    border: 1px solid rgb(255 238 224 / 24%);
+    border-radius: 2px;
+    background: #2b211d;
+    color: #f8eee6;
+    cursor: pointer;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.documentation-code-block__copy:hover,
+.documentation-code-block__copy:focus-visible {
+    border-color: #e2b668;
+    background: #382a24;
+}
+
+.documentation-article code[class*="language-"] {
+    color: var(--sklair-colour-code-ink);
+    text-shadow: none;
+}
+
+.documentation-article :not(pre) > code[class*="language-"] {
+    border-color: var(--sklair-rule-strong);
+    border-radius: 2px;
+    background: var(--sklair-colour-code);
+}
+
+.documentation-article .token.comment,
+.documentation-article .token.prolog,
+.documentation-article .token.doctype,
+.documentation-article .token.cdata {
+    color: #9b8478;
+    font-style: italic;
+}
+
+.documentation-article .token.punctuation {
+    color: #d1bfb4;
+}
+
+.documentation-article .token.namespace {
+    opacity: 0.75;
+}
+
+.documentation-article .token.property,
+.documentation-article .token.tag,
+.documentation-article .token.constant,
+.documentation-article .token.symbol,
+.documentation-article .token.deleted,
+.documentation-article .token.keyword,
+.documentation-article .token.atrule {
+    color: #efad73;
+}
+
+.documentation-article .token.boolean,
+.documentation-article .token.number {
+    color: #ffd08a;
+}
+
+.documentation-article .token.selector,
+.documentation-article .token.attr-name,
+.documentation-article .token.string,
+.documentation-article .token.char,
+.documentation-article .token.builtin,
+.documentation-article .token.inserted {
+    color: #a9d6a5;
+}
+
+.documentation-article .token.operator,
+.documentation-article .token.entity,
+.documentation-article .token.url,
+.documentation-article .language-css .token.string,
+.documentation-article .style .token.string {
+    color: #f2d5a4;
+}
+
+.documentation-article .token.function,
+.documentation-article .token.class-name {
+    color: #d8aff0;
+}
+
+.documentation-article .token.regex,
+.documentation-article .token.important,
+.documentation-article .token.variable {
+    color: #91cbd8;
+}
+
+.documentation-article .token.important,
+.documentation-article .token.bold {
+    font-weight: 800;
+}
+
+.documentation-article .token.italic {
+    font-style: italic;
+}
+
+.documentation-article .token.entity {
+    cursor: help;
+}
+
+@media (max-width: 32rem) {
+    .documentation-code-block pre {
+        padding-top: 3.25rem;
+    }
+
+    .documentation-code-block__copy {
+        top: 0.6rem;
+        right: 0.6rem;
+    }
+}

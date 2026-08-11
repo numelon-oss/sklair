@@ -1,0 +1,17 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"order": {
+			"type": "array",
+			"items": {
+				"type": "string",
+				"minLength": 1,
+				"pattern": "^[^/\\\\]+$"
+			},
+			"uniqueItems": true
+		}
+	},
+	"required": ["order"],
+	"additionalProperties": false
+}

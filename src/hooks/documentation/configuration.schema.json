@@ -1,0 +1,23 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"repository": {
+			"type": "object",
+			"properties": {
+				"editBaseURL": {
+					"type": "string",
+					"format": "uri"
+				},
+				"rawBaseURL": {
+					"type": "string",
+					"format": "uri"
+				}
+			},
+			"required": ["editBaseURL", "rawBaseURL"],
+			"additionalProperties": false
+		}
+	},
+	"required": ["repository"],
+	"additionalProperties": false
+}

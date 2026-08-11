@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<link href="./reference.css" rel="stylesheet">
+</head>
+
+<body>
+	<div class="project-configuration-reference">
+		<table>
+			<thead>
+				<tr>
+					<th>Field</th>
+					<th>Type</th>
+					<th>Default</th>
+					<th>Description</th>
+				</tr>
+			</thead>
+			<tbody>
+				<script type="application/x-sklair-lua" static>
+                local schema_path = "schema/sklair.schema.json"
+                local schema_source, read_error = fs.read("project:" .. schema_path)
+                if schema_source == nil then
+                    error("could not read project:" .. schema_path .. ": " .. read_error)
+                end
+                local project_schema, decode_error = json.decode(schema_source)
+                if project_schema == nil then
+                    error("could not decode project:" .. schema_path .. ": " .. decode_error)
+                end
+
+                local definitions = project_schema["$defs"]
+                local root_name = project_schema["$ref"]:match("^#/%$defs/(.+)$")
+                local root = definitions[root_name]
+
+                local preferred = {
+                    ProjectConfig = {
+                        "$schema", "input", "components", "layouts", "output", "exclude",
+                        "excludeCompile", "templates", "hooks", "preventFOUC", "minify", "obfuscateJS",
+                    },
+                    Hooks = { "enabled", "path", "http" },
+                    HooksHttpOptions = {
+                        "httpAllowed", "allowedHosts", "allowedMethods", "maxResponseBytes",
+                        "timeout", "followRedirects", "maxRedirects",
+                    },
+                    PreventFOUC = { "enabled", "colour" },
+                    ObfuscateJS = { "enabled" },
+                }
+
+                local function referenced_name(property)
+                    if property["$ref"] == nil then
+                        return nil
+                    end
+                    return property["$ref"]:match("^#/%$defs/(.+)$")
+                end
+
+                local function resolved(property)
+                    local name = referenced_name(property)
+                    if name == nil then
+                        return property, nil
+                    end
+                    return definitions[name], name
+                end
+
+                local function ordered_properties(definition, definition_name)
+                    local result = {}
+                    local used = {}
+                    for _, name in ipairs(preferred[definition_name] or {}) do
+                        if definition.properties[name] ~= nil then
+                            result[#result + 1] = name
+                            used[name] = true
+                        end
+                    end
+                    local remaining = {}
+                    for name in pairs(definition.properties) do
+                        if not used[name] then
+                            remaining[#remaining + 1] = name
+                        end
+                    end
+                    table.sort(remaining)
+                    for _, name in ipairs(remaining) do
+                        result[#result + 1] = name
+                    end
+                    return result
+                end
+
+                local function property_type(property)
+                    local definition = resolved(property)
+                    if definition.type == "array" then
+                        local item = resolved(definition.items)
+                        return (item.type or "value") .. "[]"
+                    end
+                    return definition.type or "value"
+                end
+
+                local function default_text(property)
+                    if property.default == nil then
+                        return "", false
+                    end
+                    local definition = resolved(property)
+                    if definition.type == "object" then
+                        return "{ ... }", true
+                    end
+                    local encoded, encode_error = json.encode(property.default)
+                    if encoded == nil then
+                        error("could not encode a project schema default: " .. encode_error)
+                    end
+                    return encoded, true
+                end
+
+                local function escape_html(value)
+                    return tostring(value)
+                        :gsub("&", "&amp;")
+                        :gsub("<", "&lt;")
+                        :gsub(">", "&gt;")
+                        :gsub('"', "&quot;")
+                        :gsub("'", "&#39;")
+                end
+
+                local function emit_field(field, field_type, default, has_default, description)
+                    local default_markup = "<span> - </span>"
+                    if has_default then
+                        default_markup = '<code class="language-json">' .. escape_html(default) .. "</code>"
+                    end
+                    sklair.html(
+                        "<tr>" ..
+                            '<th scope="row"><code>' .. escape_html(field) .. "</code></th>" ..
+                            "<td><code>" .. escape_html(field_type) .. "</code></td>" ..
+                            "<td>" .. default_markup .. "</td>" ..
+                            "<td>" .. escape_html(description) .. "</td>" ..
+                        "</tr>"
+                    )
+                end
+
+                local function emit_fields(definition, definition_name, prefix)
+                    for _, name in ipairs(ordered_properties(definition, definition_name)) do
+                        local property = definition.properties[name]
+                        local target, target_name = resolved(property)
+                        local field = prefix == "" and name or prefix .. "." .. name
+                        local default, has_default = default_text(property)
+                        local description = property.description or target.description or ""
+                        description = description:gsub("%s+", " ")
+
+                        emit_field(field, property_type(property), default, has_default, description)
+
+                        if target.type == "object" and target.properties ~= nil then
+                            emit_fields(target, target_name, field)
+                        end
+                    end
+                end
+
+                emit_fields(root, root_name, "")
+            </script>
+			</tbody>
+		</table>
+	</div>
+</body>
+
+</html>

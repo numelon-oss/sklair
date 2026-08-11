@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <script type="module" src="./compiler.mjs"></script>
+</head>
+
+<body>
+    <section class="home-compiler sklair-section">
+        <div class="sklair-container">
+            <div class="home-section-heading home-section-heading--dark">
+                <h2>Write the structure once. Compile every variation.</h2>
+                <p>
+                    Props, conditions, slots, and nested components remain authoring tools. Sklair resolves every
+                    variation before deployment and leaves only the finished structure.
+                </p>
+            </div>
+
+            <div class="home-compiler__controls" role="group" aria-label="Choose a header variation">
+                <button type="button" data-compiler-variant="full" aria-pressed="true">Full navigation</button>
+                <button type="button" data-compiler-variant="minimal">Minimal navigation</button>
+            </div>
+
+            <div class="home-compiler__flow sklair-highlight">
+                <article>
+                    <h3>Component definition</h3>
+                    <pre><code class="language-html">&lt;header class="site-header"&gt;
+    &lt;a class="brand" href="/"&gt;Sklair&lt;/a&gt;
+    &lt;nav sklair-if="links"&gt;&lt;slot&gt;&lt;/slot&gt;&lt;/nav&gt;
+    &lt;ThemeControl&gt;&lt;/ThemeControl&gt;
+&lt;/header&gt;</code></pre>
+                </article>
+
+                <article>
+                    <h3>Source document</h3>
+                    <pre><code class="language-html" data-compiler-source>&lt;SiteHeader links="true"&gt;
+    &lt;a href="/docs/"&gt;Documentation&lt;/a&gt;
+    &lt;a href="/download/"&gt;Download&lt;/a&gt;
+&lt;/SiteHeader&gt;</code></pre>
+                </article>
+
+                <div class="home-compiler__step" aria-hidden="true">
+                    <span>compile</span>
+                    <i class="fa-solid fa-arrow-down-long"></i>
+                </div>
+
+                <article>
+                    <h3>Compiled HTML</h3>
+                    <pre><code class="language-html" data-compiler-output>&lt;header class="site-header"&gt;
+    &lt;a class="brand" href="/"&gt;Sklair&lt;/a&gt;
+    &lt;nav&gt;...&lt;/nav&gt;
+    &lt;button aria-label="Change colour theme"&gt;...&lt;/button&gt;
+&lt;/header&gt;</code></pre>
+                </article>
+
+                <article class="home-compiler__browser">
+                    <h3>Browser</h3>
+                    <div class="home-compiler__rendered">
+                        <div class="home-compiler__header-preview">
+                            <span class="home-compiler__brand">Sklair</span>
+                            <nav data-compiler-links aria-label="Example navigation">
+                                <span>Documentation</span>
+                                <span>Download</span>
+                            </nav>
+                            <span class="home-compiler__theme-preview" aria-hidden="true">
+                                <i class="fa-solid fa-circle-half-stroke"></i>
+                            </span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+        </div>
+    </section>
+</body>
+
+</html>

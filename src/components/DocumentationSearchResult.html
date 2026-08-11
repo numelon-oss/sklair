@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+
+<head></head>
+
+<body>
+    <li class="documentation-search-result">
+        <a sklair-attr-href="url">
+            <span class="documentation-search-result__icon" aria-hidden="true">
+                <i class="fa-regular fa-file-lines"></i>
+            </span>
+            <span class="documentation-search-result__content">
+                <strong sklair-text="page"></strong>
+                <span class="documentation-search-result__section" sklair-text="location"></span>
+                <span class="documentation-search-result__snippet"><slot></slot></span>
+                <span class="documentation-search-result__more" sklair-if="hasmore" sklair-text="more"></span>
+            </span>
+            <small sklair-text="path"></small>
+        </a>
+    </li>
+</body>
+
+</html>

@@ -1,0 +1,36 @@
+.project-configuration-reference {
+    max-width: 100%;
+    margin-bottom: 1.4rem;
+    overflow-x: auto;
+}
+
+.documentation-article .project-configuration-reference table {
+    display: table;
+    width: 100%;
+    min-width: 40rem;
+    margin: 0;
+    table-layout: fixed;
+}
+
+.project-configuration-reference th,
+.project-configuration-reference td {
+    padding: 0.7rem;
+    vertical-align: top;
+}
+
+.project-configuration-reference th:nth-child(1) {
+    width: 28%;
+}
+
+.project-configuration-reference th:nth-child(2) {
+    width: 17%;
+}
+
+.project-configuration-reference th:nth-child(3) {
+    width: 26%;
+}
+
+.project-configuration-reference th code,
+.project-configuration-reference td code {
+    overflow-wrap: anywhere;
+}
