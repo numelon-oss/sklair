@@ -1,6 +1,7 @@
 package commands
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"os"
@@ -64,100 +65,90 @@ func getWatchPaths(src string, extraPaths ...string) ([]string, error) {
 // --auto_refresh=true|false (websocket control, default true)
 // --watch=true|false (watch for changes, default true)
 func init() {
-	var portN int
-	var host string
-
-	var open bool
-	var autoRefresh bool
-	var watch bool
-
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "serve",
 		Description: "Continuously builds and serves a Sklair project for development purposes",
+		Configure: func(flags *flag.FlagSet) commandRegistry.Handler {
+			var portN int
+			var host string
 
-		Flags: func() *flag.FlagSet {
-			fs := flag.NewFlagSet("serve", flag.ContinueOnError)
+			var open bool
+			var autoRefresh bool
+			var watch bool
 
-			fs.IntVar(&portN, "port", 0, "Port to listen on")
-			fs.StringVar(&host, "host", "localhost", "Host to listen on")
+			flags.IntVar(&portN, "port", 0, "Port to listen on")
+			flags.StringVar(&host, "host", "localhost", "Host to listen on")
 
-			fs.BoolVar(&open, "open", false, "Open the default browser") // TODO: actually use this flag value
-			fs.BoolVar(&autoRefresh, "auto-refresh", true, "Automatically refresh connected preview instances")
-			fs.BoolVar(&watch, "watch", true, "Watch for filesystem changes") // TODO: actually use this flag value
+			flags.BoolVar(&open, "open", false, "Open the default browser") // TODO: actually use this flag value
+			flags.BoolVar(&autoRefresh, "auto-refresh", true, "Automatically refresh connected preview instances")
+			flags.BoolVar(&watch, "watch", true, "Watch for filesystem changes") // TODO: actually use this flag value
 
-			return fs
-		},
+			return func(ctx context.Context, _ *commandRegistry.Environment, args []string) error {
+				if len(args) != 0 {
+					return commandRegistry.UsageErrorf("Serve does not accept positional arguments")
+				}
 
-		Run: func(args []string) int {
-			config, configDir, err := sklairConfig.LoadProjectConfig()
-			if err != nil {
-				logger.Error("could not load sklair.json : %s", err.Error())
-				return 1
-			}
+				config, configDir, err := sklairConfig.LoadProjectConfig()
+				if err != nil {
+					return fmt.Errorf("load sklair.json: %w", err)
+				}
 
-			tmp, err := os.MkdirTemp("", "sklair-")
-			if err != nil {
-				logger.Error("could not create temporary directory : %s", err.Error())
-				return 1
-			}
-			defer os.RemoveAll(tmp)
+				tmp, err := os.MkdirTemp("", "sklair-")
+				if err != nil {
+					return fmt.Errorf("create temporary directory: %w", err)
+				}
+				defer os.RemoveAll(tmp)
 
-			listener, port, err := devserver.AcquirePort(host, portN)
-			if err != nil {
-				logger.Error("could not acquire port : %s", err.Error())
-				return 1
-			}
-			defer listener.Close()
+				listener, port, err := devserver.AcquirePort(host, portN)
+				if err != nil {
+					return fmt.Errorf("acquire port: %w", err)
+				}
+				defer listener.Close()
 
-			wsThing := devserver.NewWS()
+				wsThing := devserver.NewWS()
 
-			// TODO: we need to be able to check whether the server started successfully in the first place or not
-			// otherwise we are just walking in blind here
-			// and dont know whether the file server is running or not
-			// whilst still tracking the filesystem and recompiling every time...
-			go devserver.Serve(listener, tmp, port, wsThing)
+				// TODO: we need to be able to check whether the server started successfully in the first place or not
+				// otherwise we are just walking in blind here
+				// and dont know whether the file server is running or not
+				// whilst still tracking the filesystem and recompiling every time...
+				go devserver.Serve(listener, tmp, port, wsThing)
 
-			err = building.Build(config, configDir, tmp)
-			if err != nil {
-				logger.Error(err.Error())
-				return 1
-			}
+				err = building.Build(config, configDir, tmp)
+				if err != nil {
+					return fmt.Errorf("build project: %w", err)
+				}
 
-			// for now: ENTIRE project is rebuild on change
-			// but in the future maybe only rebuild changed files: see comment at very top
+				// for now: ENTIRE project is rebuild on change
+				// but in the future maybe only rebuild changed files: see comment at very top
 
-			watchPaths, err := getWatchPaths(config.Input, config.Components, config.Layouts)
-			if err != nil {
-				logger.Error(err.Error())
-				return 1
-			}
+				watchPaths, err := getWatchPaths(config.Input, config.Components, config.Layouts)
+				if err != nil {
+					return fmt.Errorf("resolve watch paths: %w", err)
+				}
 
-			events, errs := devserver.Watch(watchPaths...)
+				events, errs := devserver.Watch(watchPaths...)
 
-			for {
-				select {
-				case <-events:
-					//_ = os.RemoveAll(tmp)
-					//_ = os.MkdirAll(tmp, 0755)
+				for {
+					select {
+					case <-ctx.Done():
+						return nil
+					case <-events:
+						//_ = os.RemoveAll(tmp)
+						//_ = os.MkdirAll(tmp, 0755)
 
-					err = building.Build(config, configDir, tmp)
-					if err != nil {
-						logger.Error(err.Error())
-						return 1
+						err = building.Build(config, configDir, tmp)
+						if err != nil {
+							return fmt.Errorf("rebuild project: %w", err)
+						}
+
+						if autoRefresh {
+							wsThing.Send <- "reload"
+						}
+					case err := <-errs:
+						logger.Error("%v", err)
 					}
-
-					if autoRefresh {
-						wsThing.Send <- "reload"
-					}
-				case err := <-errs:
-					logger.Error(err.Error())
 				}
 			}
-
-			// TODO: add a channel which is used for receiving Ctrl+C signals for graceful shutdown,
-			// perhaps supply that channel to the Watch function to make all the defers run
-
-			return 0
 		},
 	})
 }

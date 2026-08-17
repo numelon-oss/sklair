@@ -1,23 +1,26 @@
 package commands
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"sklair/commandRegistry"
 	"sklair/sklairConfig"
-
-	"github.com/numelon-oss/go-logger"
 )
 
 func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "clean",
 		Description: "Removes all temporary and generated files made by Sklair, including hook-created caches",
-		Run: func(args []string) int {
+		Configure: commandRegistry.Simple(func(_ context.Context, _ *commandRegistry.Environment, args []string) error {
+			if len(args) != 0 {
+				return commandRegistry.UsageErrorf("Clean does not accept arguments")
+			}
+
 			config, configDir, err := sklairConfig.LoadProjectConfig()
 			if err != nil {
-				logger.Error("could not load sklair.json : %s", err.Error())
-				return 1
+				return fmt.Errorf("load sklair.json: %w", err)
 			}
 
 			sklairDir := filepath.Join(configDir, ".sklair")
@@ -25,26 +28,17 @@ func init() {
 			tempDir := filepath.Join(sklairDir, "temp")
 			generatedDir := filepath.Join(sklairDir, "generated")
 
-			if err == nil {
-				outputDir := filepath.Join(configDir, config.Output)
-				err = os.RemoveAll(outputDir)
-				if err != nil {
-					logger.Error("could not remove output directory %s : %s", outputDir, err.Error())
-					return 1
-				}
+			outputDir := filepath.Join(configDir, config.Output)
+			if err := os.RemoveAll(outputDir); err != nil {
+				return fmt.Errorf("remove output directory %s: %w", outputDir, err)
 			}
-			err = os.RemoveAll(tempDir)
-			if err != nil {
-				logger.Error("could not remove Sklair's temp directory %s : %s", tempDir, err.Error())
-				return 1
+			if err := os.RemoveAll(tempDir); err != nil {
+				return fmt.Errorf("remove Sklair temp directory %s: %w", tempDir, err)
 			}
-			err = os.RemoveAll(generatedDir)
-			if err != nil {
-				logger.Error("could not remove Sklair's generated directory %s : %s", generatedDir, err.Error())
-				return 1
+			if err := os.RemoveAll(generatedDir); err != nil {
+				return fmt.Errorf("remove Sklair generated directory %s: %w", generatedDir, err)
 			}
-
-			return 0
-		},
+			return nil
+		}),
 	})
 }

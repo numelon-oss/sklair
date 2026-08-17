@@ -1,7 +1,7 @@
 package commands
 
 import (
-	"flag"
+	"context"
 	"fmt"
 	"sklair/commandRegistry"
 )
@@ -10,15 +10,9 @@ func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "test",
 		Description: "A test command",
-
-		Flags: func() *flag.FlagSet {
-			fs := flag.NewFlagSet("Test", flag.ExitOnError)
-			return fs
-		},
-		Run: func(args []string) int {
+		Configure: commandRegistry.Simple(func(_ context.Context, _ *commandRegistry.Environment, args []string) error {
 			fmt.Println(args)
-
-			return 0
-		},
+			return nil
+		}),
 	})
 }

@@ -1,31 +1,31 @@
 package commands
 
 import (
+	"context"
+	"fmt"
 	"sklair/building"
 	"sklair/commandRegistry"
 	"sklair/sklairConfig"
-
-	"github.com/numelon-oss/go-logger"
 )
 
 func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "build",
 		Description: "Builds a Sklair project",
-		Run: func(args []string) int {
+		Configure: commandRegistry.Simple(func(_ context.Context, _ *commandRegistry.Environment, args []string) error {
+			if len(args) != 0 {
+				return commandRegistry.UsageErrorf("Build does not accept arguments")
+			}
+
 			config, configDir, err := sklairConfig.LoadProjectConfig()
 			if err != nil {
-				logger.Error("could not load sklair.json : %s", err.Error())
-				return 1
+				return fmt.Errorf("load sklair.json: %w", err)
 			}
 
-			err = building.Build(config, configDir, "")
-			if err != nil {
-				logger.Error(err.Error())
-				return 1
+			if err := building.Build(config, configDir, ""); err != nil {
+				return fmt.Errorf("build project: %w", err)
 			}
-
-			return 0
-		},
+			return nil
+		}),
 	})
 }

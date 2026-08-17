@@ -2,6 +2,7 @@ package commands
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -93,7 +94,11 @@ func init() {
 	commandRegistry.Registry.Register(&commandRegistry.Command{
 		Name:        "init",
 		Description: "Initialises a Sklair project in the current directory",
-		Run: func(args []string) int {
+		Configure: commandRegistry.Simple(func(_ context.Context, _ *commandRegistry.Environment, args []string) error {
+			if len(args) != 0 {
+				return commandRegistry.UsageErrorf("Init does not accept arguments")
+			}
+
 			fmt.Println(logger.Cyan + "Welcome to Sklair! 🪶 Let's get you set up." + logger.Reset)
 			fmt.Println(logger.Green + "This will guide you through creating a sklair.json configuration file for your Sklair project.")
 			fmt.Println("Press Enter to accept the default, which is shown in brackets." + logger.Reset)
@@ -144,23 +149,21 @@ func init() {
 
 			if !askBool("Write sklair.json with this configuration?", true) {
 				fmt.Println("Aborted. No files were written.")
-				return 0
+				return nil
 			}
 
 			// write file
 			data, err := json.MarshalIndent(cfg, "", "  ")
 			if err != nil {
-				fmt.Println("Failed to serialise configuration:", err)
-				return 1
+				return fmt.Errorf("serialise configuration: %w", err)
 			}
 
 			if err := os.WriteFile("sklair.json", data, 0644); err != nil {
-				fmt.Println("Failed to write sklair.json:", err)
-				return 1
+				return fmt.Errorf("write sklair.json: %w", err)
 			}
 
 			fmt.Println("Created sklair.json")
-			return 0
-		},
+			return nil
+		}),
 	})
 }

@@ -1,36 +1,38 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"io"
 	"os"
+	"os/signal"
 	"sklair/commandRegistry"
 	_ "sklair/commandRegistry/commands"
+	"syscall"
 
 	"github.com/numelon-oss/go-logger"
 )
 
 func main() {
-	os.Exit(run())
+	os.Exit(run(os.Args[1:]))
 }
 
-func run() int {
+func run(args []string) int {
 	reg := commandRegistry.Registry
 
 	global := flag.NewFlagSet("sklair", flag.ContinueOnError)
+	global.SetOutput(io.Discard)
 
 	silent := global.Bool("silent", false, "Suppress all output except errors")
 	verbose := global.Bool("verbose", false, "Enable verbose output")
 	debug := global.Bool("debug", false, "Enable debug output")
 
 	help := global.Bool("help", false, "Show help")
-	if *help {
-		reg.PrintHelp()
-		return 0
-	}
+	shortHelp := global.Bool("h", false, "Show help")
 
-	// wrong usage
-	if err := global.Parse(os.Args[1:]); err != nil {
+	if err := global.Parse(args); err != nil {
+		logger.Error("%v", err)
 		return 2
 	}
 
@@ -52,35 +54,13 @@ func run() int {
 
 	// --------------------------------------------------
 
-	args := global.Args()
-	if len(args) == 0 {
-		reg.PrintHelp()
-		return 2
+	args = global.Args()
+	if *help || *shortHelp {
+		args = append([]string{"help"}, args...)
 	}
 
-	cmdName := args[0]
-	cmd, ok := reg.Get(cmdName)
-	if !ok {
-		_, _ = fmt.Fprintf(os.Stderr, "%sUnknown command: %s%s\n\n", logger.Red, cmdName, logger.Reset)
-		reg.PrintHelp()
-		return 2
-	}
+	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
+	defer stop()
 
-	// TODO: set up the sklair dir inside the users home directory here along with the default app config
-
-	remainingArgs := args[1:]
-	if cmd.Flags != nil {
-		fs := cmd.Flags()
-
-		if err := fs.Parse(remainingArgs); err != nil {
-			return 2
-		}
-
-		// fs is the flagset, fs.Args() gives the remaining args
-		// in this case, we send the remaining args
-		// as flags are assumed to be handled already in most command init() funcs
-		return cmd.Run(fs.Args())
-	}
-
-	return cmd.Run(remainingArgs)
+	return int(reg.Execute(ctx, &commandRegistry.Environment{}, args))
 }
