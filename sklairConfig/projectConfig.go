@@ -25,6 +25,19 @@ type PreventFOUC struct {
 	Colour string `json:"colour,omitempty" jsonschema:"title=FOUC prevention overlay colour"`
 }
 
+type ServeRewrite struct {
+	// The request path pattern to match. Named segments begin with ':' and a final '*' matches the remaining path.
+	From string `json:"from" jsonschema:"title=Request path pattern"`
+
+	// The generated file that matching requests should serve.
+	To string `json:"to" jsonschema:"title=Generated target file"`
+}
+
+type ServeOptions struct {
+	// Ordered development-server path rewrites. Generated files take precedence over rewrites.
+	Rewrites []ServeRewrite `json:"rewrites,omitempty" jsonschema:"title=Development server rewrites"`
+}
+
 type HTTPMethod string
 
 func (HTTPMethod) JSONSchema() *jsonschema.Schema {
@@ -113,6 +126,8 @@ type ProjectConfig struct {
 	// Components that compile into native browser templates when used in a document.
 	// Sklair Runtime is not included if this field is omitted.
 	Templates []string `json:"templates,omitempty" jsonschema:"title=Runtime templates"`
+	// Development server options.
+	Serve *ServeOptions `json:"serve,omitempty" jsonschema:"title=Development server"`
 	//ResourceHints *ResourceHints `json:"resourceHints,omitempty"` // TODO: in sklair init, add ResourceHints to the questionnaire
 }
 
@@ -149,6 +164,9 @@ var DefaultConfig = ProjectConfig{
 	PreventFOUC: &PreventFOUC{
 		Enabled: false,
 		Colour:  "#202020",
+	},
+	Serve: &ServeOptions{
+		Rewrites: nil,
 	},
 	//ResourceHints: &ResourceHints{
 	//	Enabled:    false,

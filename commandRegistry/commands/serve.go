@@ -92,6 +92,14 @@ func init() {
 				if err != nil {
 					return fmt.Errorf("load sklair.json: %w", err)
 				}
+				var rewriteValues []sklairConfig.ServeRewrite
+				if config.Serve != nil {
+					rewriteValues = config.Serve.Rewrites
+				}
+				rewrites, err := devserver.CompileRewrites(rewriteValues)
+				if err != nil {
+					return err
+				}
 
 				tmp, err := os.MkdirTemp("", "sklair-")
 				if err != nil {
@@ -111,7 +119,7 @@ func init() {
 				// otherwise we are just walking in blind here
 				// and dont know whether the file server is running or not
 				// whilst still tracking the filesystem and recompiling every time...
-				go devserver.Serve(listener, tmp, port, wsThing)
+				go devserver.Serve(listener, tmp, port, wsThing, rewrites)
 
 				err = building.Build(config, configDir, tmp)
 				if err != nil {
