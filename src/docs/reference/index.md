@@ -12,7 +12,6 @@ This section describes Sklair as it exists, including the slightly awkward edges
 - [Command-line interface](./cli/) covers every command and global logging flag.
 - [Project configuration](./project-configuration/) lists every `sklair.json` field, its default, and whether it currently has an effect.
 - [Compiler directives](./directives/) defines the comment syntax for head ordering and source removal.
-- [Errors and diagnostics](./errors/) explains where failures originate and how provenance is reported.
 
 ## Lua libraries
 

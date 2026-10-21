@@ -33,4 +33,4 @@ Package-manager distribution, update notifications, hook HTTP, and reusable pack
 
 ## Read by task
 
-Use the [project configuration reference](/docs/reference/project-configuration/) when you need exact `sklair.json` fields, the [CLI reference](/docs/reference/cli/) for commands and flags, and [Errors and diagnostics](/docs/reference/errors/) when the compiler refuses a build. It usually has a reason. Occasionally it even phrases that reason politely.
+Use the [project configuration reference](/docs/reference/project-configuration/) when you need exact `sklair.json` fields and the [CLI reference](/docs/reference/cli/) for commands and flags.

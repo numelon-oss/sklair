@@ -1,50 +1,54 @@
 {
-  "description": "Understand the source, component, layout, hook, generated, cache, and output directories in a Sklair project."
+  "description": "Create the source, component, layout, and output directories used by a Sklair project."
 }
 ---
 
 # Project structure
 
-Sklair does not impose one sacred directory layout. It resolves configured paths relative to the directory containing `sklair.json`, which means an existing site can keep its shape instead of being reorganised to please the compiler.
+Create an empty directory for the project, enter it, and run:
 
-The default configuration produced by `sklair init` describes this structure:
+```bash title="Terminal"
+sklair init
+```
 
-```text
-project/
+`sklair init` asks where your source, components, layouts, hooks, and built site should live. Press Enter to accept a default. It writes `sklair.json`; it does not create the directories themselves.
+
+For this guide, use the defaults and create the following structure:
+
+```text title="Project files" hl_lines="3 5"
+my-site/
 ├── sklair.json
 ├── src/
 │   └── index.html
 ├── components/
+│   └── SiteGreeting.html
 ├── layouts/
-├── hooks/
-│   ├── pre/
-│   └── post/
 └── build/
 ```
 
-## Source and output
+The files can remain empty for now. The next page fills them in.
 
-`input` is the tree Sklair discovers. HTML-family files are compiled; neighbouring files are copied without interpretation. Their paths relative to `input` become their paths beneath `output`.
+## What each directory does
 
-`output` is compiler-owned. A successful build replaces it, so do not put authored files there and hope sentimentality will protect them.
+| Path | Purpose |
+| --- | --- |
+| `#!json sklair.json` | Configures the project. Paths inside it are relative to this file. |
+| `#!text src/` | Contains pages and static files. HTML is compiled; neighbouring files are copied. |
+| `#!text components/` | Contains reusable HTML components. |
+| `#!text layouts/` | Contains full-document layouts used by generated documents. It may be empty. |
+| `#!text build/` | Receives the completed site. Sklair replaces it after a successful build. |
 
-## Components, layouts, and hooks
-
-`components` contains reusable component definitions. A component may be one HTML file or a directory with an `index.html` entry and companion assets.
-
-`layouts` contains full HTML documents used by generated documents. Layouts are discovered separately from source pages.
-
-When hooks are enabled, `hooks/pre` and `hooks/post` contain alphabetically ordered Lua files. The configured component, layout, hook, and output directories are automatically excluded from ordinary source discovery when they sit beneath `input`.
+Sklair does not require this exact layout. Change the paths in `sklair.json` if an existing project is arranged differently.
 
 ## Sklair's workspace
 
-The compiler maintains `.sklair` beside the configuration:
+During a build, Sklair creates `.sklair` beside the configuration file:
 
-```text
+```text title="Compiler-owned workspace"
 .sklair/
 ├── cache/
 ├── generated/
 └── temp/
 ```
 
-Pre-build work starts with `generated` and `temp` cleared. `cache` persists until `sklair clean`, which makes it suitable for hook-owned data which is expensive to reconstruct. Generated assets are copied into `/_sklair/generated/` in the built site.
+Hooks may keep reusable data in `cache`. Generated inputs and temporary files are cleared when appropriate. `sklair clean` removes the output directory and the entire `.sklair` workspace.

@@ -9,7 +9,7 @@ Sklair reads `sklair.json` from the current directory, falling back to `src/skla
 
 ```json
 {
-  "$schema": "https://sklair.numelon.com/schema/sklair-development.schema.json",
+  "$schema": "https://github.com/numelon-oss/sklair/releases/latest/download/sklair.schema.json",
   "input": ".",
   "components": "components",
   "layouts": "layouts",

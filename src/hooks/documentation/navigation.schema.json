@@ -2,16 +2,32 @@
 	"$schema": "https://json-schema.org/draft/2020-12/schema",
 	"type": "object",
 	"properties": {
-		"order": {
-			"type": "array",
-			"items": {
-				"type": "string",
-				"minLength": 1,
-				"pattern": "^[^/\\\\]+$"
+		"directories": {
+			"type": "object",
+			"propertyNames": {
+				"pattern": "^(\\.|[^/\\\\]+(?:/[^/\\\\]+)*)$"
 			},
-			"uniqueItems": true
+			"additionalProperties": {
+				"type": "object",
+				"properties": {
+					"order": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"pattern": "^[^/\\\\]+$"
+						},
+						"uniqueItems": true
+					},
+					"numbered": {
+						"type": "boolean"
+					}
+				},
+				"required": ["order"],
+				"additionalProperties": false
+			}
 		}
 	},
-	"required": ["order"],
+	"required": ["directories"],
 	"additionalProperties": false
 }

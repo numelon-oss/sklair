@@ -11,6 +11,7 @@ The `markdown` library parses source once and returns an immutable document obje
 local document = markdown.parse(source)
 local html = document:to_html()
 local headings = document:headings()
+local links = document:links()
 local sections = document:sections()
 ```
 
@@ -24,6 +25,30 @@ Inline code can opt into lexical highlighting by beginning with a hashtag and an
 
 This renders as `#!html <code class="language-lua">markdown.parse(source)</code>`; the marker is removed from rendered text, headings, generated identifiers, and extracted sections. Unmarked inline code retains ordinary CommonMark behaviour.
 
+## Fenced code options
+
+Fenced code blocks accept an optional title, starting line number, and highlighted lines:
+
+````markdown title="Markdown source"
+```lua title="hooks/pre/articles.lua" linenums="12" hl_lines="14 17-19"
+local content = fs.read("project:articles/introduction.md")
+```
+````
+
+`linenums` may be written without a value to begin at line 1. `hl_lines` accepts individual lines and inclusive ranges separated by spaces or commas.
+
+## Admonitions
+
+Use an admonition when information should not disappear into the surrounding paragraphs:
+
+```markdown title="Markdown source"
+!!! warning "Trusted HTML"
+
+    Only pass HTML which you control or have deliberately sanitised.
+```
+
+The type becomes a `documentation-admonition--<type>` class, allowing generated sites to style `note`, `info`, `tip`, `warning`, `danger`, or their own names.
+
 ## `#!lua document:to_html(options?)`
 
 Render the parsed document to a HTML fragment. By default, authored raw HTML is not passed through:
@@ -33,7 +58,23 @@ local safe = document:to_html()
 local trusted = document:to_html({ rawHTML = true })
 ```
 
-`rawHTML` is the only accepted option and must be boolean. Enable it only for content whose embedded HTML is trusted.
+Enable `rawHTML` only for content whose embedded HTML is trusted.
+
+The optional `links` table replaces exact Markdown link destinations while rendering:
+
+```lua
+local html = document:to_html({
+  links = {
+    ["../guide.md"] = "/docs/guide/",
+  },
+})
+```
+
+This is useful when source-relative Markdown paths and generated output URLs follow different layouts. Images are not rewritten.
+
+## `#!lua document:links()`
+
+Return the document's unique Markdown link destinations as a sorted array. A generator can resolve them against its source map and pass the replacements to `to_html`.
 
 ## `#!lua document:headings()`
 

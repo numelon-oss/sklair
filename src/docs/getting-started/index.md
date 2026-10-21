@@ -1,26 +1,26 @@
 {
-  "description": "Install Sklair, create a project, and compile your first site into ordinary HTML."
+  "description": "Create a small Sklair project, compile a component into ordinary HTML, and use the development server."
 }
 ---
 
 # Getting started
 
-This guide takes the shortest honest route from a Sklair binary to a compiled site. You will create a project, define one component, use it from a HTML document, and run the development server.
+This guide creates a small Sklair project and compiles its first [component](../glossary/component.md). You only need a Sklair binary and a terminal.
 
-Sklair does not require Node.js, a package manifest, or a browser runtime. The compiler is a standalone Go binary and the project can begin with little more than `sklair.json`, a HTML file, and a components directory.
+Download Sklair, mark it as executable if your platform requires it, and place it on `PATH` using the [download page](/download/). Then confirm it runs:
 
-## The route through this guide
+```bash title="Terminal"
+sklair version
+```
 
-1. [Install Sklair](/download) and confirm the binary runs.
-2. Learn the [project structure](/docs/getting-started/project-structure/) produced by `sklair init`.
-3. Compile [your first build](/docs/getting-started/your-first-build/) and inspect the output.
-4. Use the [development server](/docs/getting-started/development-server/) while changing the project.
+## Build the project
 
-You can read those pages in order, although there is nothing sacred about the sequence. Existing projects can add Sklair by writing a configuration file directly and keeping their current directory structure.
+Follow these pages in order:
 
-## What you should expect
+1. Set up the [project structure](./project-structure.md).
+2. Compile [your first build](./your-first-build.md).
+3. Work with the [development server](./development-server.md).
 
-The first example is intended to be small, demonstrating the important basics of Sklair: a component invocation is present in source and absent from output.
-Once that contract is clear, recursive components, Lua, runtime templates, and document generation are extensions of the same compilation model.
+The example uses one source document and one component. By the end, the component tag and its Sklair attributes will have disappeared into ordinary HTML.
 
-Sklair replaces the configured output directory on each successful build. Keep authored source outside that directory and treat built files as disposable artefacts.
+Sklair replaces the configured output directory after every successful build. Keep your source outside it and treat built files as disposable.

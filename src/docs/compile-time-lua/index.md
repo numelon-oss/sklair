@@ -5,7 +5,7 @@
 
 # Compile-time Lua
 
-Compile-time Lua is an escape hatch inside Sklair's compiler, not a browser runtime wearing a confusing hat. It runs while HTML is being built, emits ordinary nodes, and disappears from the final document.
+Compile-time Lua is an escape hatch inside Sklair's compiler which runs while HTML is being built, emits ordinary nodes, and disappears from the final document.
 
 ```html
 <script type="application/x-sklair-lua">
@@ -18,6 +18,6 @@ Use it when HTML structure genuinely depends on data or computation: generating 
 Sklair has two execution modes:
 
 - dynamic Lua runs for each document, component, or layout instance;
-- static Lua runs once while a used definition is prepared, and its unresolved output is reused.
+- static Lua runs once while a used definition is prepared, and its unresolved output is reused (effectively cached).
 
 Every block executes in an isolated Lua thread. Related blocks can still share an explicit scope, while separate component instances and hooks cannot leak globals into one another. The filesystem is read-only from inline Lua, dangerous operating-system functions are absent, and emitted markup re-enters the normal component compiler.

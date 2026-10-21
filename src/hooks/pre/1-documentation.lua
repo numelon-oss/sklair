@@ -133,11 +133,6 @@ local function parse_page(source)
 		fail(source .. ": Markdown document contains more than one level-one heading")
 	end
 
-	local body, err = document:to_html({ rawHTML = true })
-	if body == nil then
-		fail(source .. ": could not render Markdown: " .. err)
-	end
-
 	local output = source_to_output(source)
 	return {
 		source = source,
@@ -149,7 +144,8 @@ local function parse_page(source)
 		description = metadata.description,
 		headings = headings,
 		sections = document_sections,
-		body = body,
+		document = document,
+		definition = metadata.definition,
 	}
 end
 
@@ -178,10 +174,32 @@ local function documentation_entries(path)
 	if not index_found then
 		fail(path .. ": every documentation directory must contain index.md")
 	end
+	table.sort(entries, function(left, right)
+		return left.key < right.key
+	end)
 	return entries
 end
 
-local function apply_root_order(entries)
+local used_navigation_directories = {}
+
+local function navigation_directory(path)
+	local key = "."
+	if path ~= docs_root then
+		key = path:sub(#docs_root + 2)
+	end
+	local configuration = navigation.directories[key]
+	if configuration ~= nil then
+		used_navigation_directories[key] = true
+	end
+	return configuration
+end
+
+local function apply_directory_order(entries, path)
+	local configuration = navigation_directory(path)
+	if configuration == nil then
+		return entries, false
+	end
+
 	local by_key = {}
 	for _, entry in ipairs(entries) do
 		by_key[entry.key] = entry
@@ -189,10 +207,10 @@ local function apply_root_order(entries)
 
 	local ordered = {}
 	local promoted = {}
-	for _, key in ipairs(navigation.order) do
+	for _, key in ipairs(configuration.order) do
 		local entry = by_key[key]
 		if entry == nil then
-			fail(navigation_source .. ': ordered entry "' .. key .. '" is missing or is not documentation')
+			fail(navigation_source .. ': ordered entry "' .. key .. '" is missing from ' .. path)
 		end
 		if promoted[key] then
 			fail(navigation_source .. ': ordered entry "' .. key .. '" is duplicated')
@@ -205,7 +223,7 @@ local function apply_root_order(entries)
 			ordered[#ordered + 1] = entry
 		end
 	end
-	return ordered
+	return ordered, configuration.numbered == true
 end
 
 local pages = json.array()
@@ -220,20 +238,19 @@ local function add_page(page)
 	pages[#pages + 1] = page
 end
 
-local function discover_directory(path, root)
+local function discover_directory(path)
 	local index = parse_page(path .. "/index.md")
 	add_page(index)
 
 	local entries = documentation_entries(path)
-	if root then
-		entries = apply_root_order(entries)
-	end
+	local numbered
+	entries, numbered = apply_directory_order(entries, path)
 
 	local children = json.array()
-	for _, entry in ipairs(entries) do
+	for entry_index, entry in ipairs(entries) do
 		local child
 		if entry.kind == "directory" then
-			child = discover_directory(path .. "/" .. entry.name, false)
+			child = discover_directory(path .. "/" .. entry.name)
 		else
 			local page = parse_page(path .. "/" .. entry.name)
 			add_page(page)
@@ -241,6 +258,9 @@ local function discover_directory(path, root)
 				page = page,
 				children = json.array(),
 			})
+		end
+		if numbered then
+			child.navigation_title = tostring(entry_index) .. ". " .. child.page.title
 		end
 		children[#children + 1] = child
 	end
@@ -251,7 +271,89 @@ local function discover_directory(path, root)
 	})
 end
 
-local root = discover_directory(docs_root, true)
+local root = discover_directory(docs_root)
+
+for path in pairs(navigation.directories) do
+	if not used_navigation_directories[path] then
+		fail(navigation_source .. ': configured directory "' .. path .. '" does not exist')
+	end
+end
+
+local pages_by_source = {}
+for _, page in ipairs(pages) do
+	pages_by_source[page.source] = page
+end
+
+local function source_directory(source)
+	return source:match("^(.*)/[^/]+$") or ""
+end
+
+local function normalise_source(path)
+	local segments = {}
+	for segment in path:gmatch("[^/]+") do
+		if segment == ".." then
+			if #segments == 0 then
+				return nil
+			end
+			table.remove(segments)
+		elseif segment ~= "." and segment ~= "" then
+			segments[#segments + 1] = segment
+		end
+	end
+	return table.concat(segments, "/")
+end
+
+local function relative_link_replacements(page)
+	local replacements = {}
+	for _, destination in ipairs(page.document:links()) do
+		if destination:sub(1, 1) ~= "/"
+			and destination:sub(1, 1) ~= "#"
+			and not destination:match("^[%a][%w+.-]*:") then
+			local path, suffix = destination:match("^([^?#]+)(.*)$")
+			if path ~= nil and path:sub(-3) == ".md" then
+				local resolved = normalise_source(source_directory(page.source) .. "/" .. path)
+				local target = resolved ~= nil and pages_by_source[resolved] or nil
+				if target == nil then
+					fail(page.source .. ': relative Markdown link "' .. destination .. '" does not resolve to a documentation page')
+				end
+				replacements[destination] = target.url .. suffix
+			end
+		end
+	end
+	return replacements
+end
+
+for _, page in ipairs(pages) do
+	local body, render_error = page.document:to_html({
+		rawHTML = true,
+		links = relative_link_replacements(page),
+	})
+	if body == nil then
+		fail(page.source .. ": could not render Markdown: " .. render_error)
+	end
+	page.body = body
+end
+
+local definitions = json.object()
+for _, page in ipairs(pages) do
+	if page.definition ~= nil then
+		definitions[page.url] = json.object({
+			title = page.title,
+			definition = page.definition,
+		})
+	end
+end
+local definitions_source, definitions_encode_error = json.encode(definitions)
+if definitions_source == nil then
+	fail("could not encode documentation definitions: " .. definitions_encode_error)
+end
+local definitions_written, definitions_write_error = fs.write(
+	"generated:docs/definitions.json",
+	definitions_source
+)
+if not definitions_written then
+	fail("could not write documentation definitions: " .. definitions_write_error)
+end
 
 local function navigation_node(node, current_url)
 	local children = json.array()
@@ -259,7 +361,7 @@ local function navigation_node(node, current_url)
 		children[#children + 1] = navigation_node(child, current_url)
 	end
 	return json.object({
-		title = node.page.title,
+		title = node.navigation_title or node.page.title,
 		url = node.page.url,
 		current = node.page.url == current_url,
 		children = children,

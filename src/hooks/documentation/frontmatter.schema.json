@@ -5,6 +5,10 @@
 		"description": {
 			"type": "string",
 			"minLength": 1
+		},
+		"definition": {
+			"type": "string",
+			"minLength": 1
 		}
 	},
 	"required": ["description"],

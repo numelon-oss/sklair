@@ -1,13 +1,52 @@
 {
-  "description": "Create a HTML document and component, build them with Sklair, and inspect the resulting browser-native output."
+  "description": "Create one HTML component, use it from a page, and inspect the HTML produced by Sklair."
 }
 ---
 
 # Your first build
 
-Create `src/index.html` as a real document:
+The project needs a configuration file, one page, and one [component](../glossary/component.md).
 
-```html
+## Configure Sklair
+
+Write this to `sklair.json`:
+
+```json title="sklair.json" linenums="1"
+{
+  "$schema": "https://github.com/numelon-oss/sklair/releases/latest/download/sklair.schema.json",
+  "input": "./src",
+  "components": "./components",
+  "layouts": "./layouts",
+  "output": "./build"
+}
+```
+
+The `$schema` line is optional. Editors which support JSON Schema can use it for completion and validation.
+
+## Create the component
+
+Write this to `components/SiteGreeting.html`:
+
+```html title="components/SiteGreeting.html" linenums="1" hl_lines="7"
+<!doctype html>
+<html>
+<head></head>
+<body>
+  <h1>
+    Hello,
+    <span sklair-text="name"></span>.
+  </h1>
+</body>
+</html>
+```
+
+`#!html sklair-text="name"` is a [binding](../glossary/binding.md). It inserts the `name` [prop](../glossary/prop.md) as text and removes the `sklair-text` attribute from the result.
+
+## Use the component
+
+Write this to `src/index.html`:
+
+```html title="src/index.html" linenums="1" hl_lines="8"
 <!doctype html>
 <html lang="en">
 <head>
@@ -20,53 +59,25 @@ Create `src/index.html` as a real document:
 </html>
 ```
 
-Then create `components/SiteGreeting.html`:
+The `#!html <SiteGreeting>` tag is a [component use](../glossary/component-use.md). Its `name` attribute supplies the value read by the binding.
 
-```html
-<!doctype html>
-<html>
-<head></head>
-<body>
-  <h1>Hello, <span sklair-text="name"></span>.</h1>
-</body>
-</html>
-```
+## Compile it
 
-The `sklair-text` binding implicitly declares the component's `name` prop. The invocation supplies it as an ordinary HTML attribute.
+Run Sklair from the directory containing `sklair.json`:
 
-## Configure the directories
-
-At the project root, write:
-
-```json
-{
-  "input": "./src",
-  "components": "./components",
-  "layouts": "./layouts",
-  "output": "./build"
-}
-```
-
-An absent layouts directory is allowed. An absent components directory is not: component discovery needs the configured directory even when the first project barely deserves one.
-
-## Compile the site
-
-Run:
-
-```sh
+```bash title="Terminal"
 sklair build
 ```
 
-The relevant part of `build/index.html` becomes:
+Open `build/index.html`. Its body contains ordinary HTML:
 
-```html
+```html title="build/index.html"
 <body>
-  <h1>Hello, <span>world</span>.</h1>
+  <h1>
+    Hello,
+    <span>world</span>.
+  </h1>
 </body>
 ```
 
-`SiteGreeting`, its prop, and the binding have disappeared. They were authoring structure, not an API the visitor's browser must download.
-
-Sklair also adds its generator metadata and finalises the document head. Formatting may differ because the output is rendered from the parsed HTML tree; semantics are what the compiler preserves.
-
-Change the prop, build again, mess around and inspect the output. Sklair can be understood even more when you look at what it *removes*.
+The component tag, prop, and binding are gone. Change `name`, build again, mess around and inspect the output. Sklair is easiest to understand when you see what it removes.

@@ -1,44 +1,44 @@
 {
-  "description": "Use Sklair's development server to rebuild and refresh a site while working on it."
+  "description": "Build, serve, and automatically refresh a Sklair project while changing its source."
 }
 ---
 
 # Development server
 
-`sklair serve` builds the current project into a temporary output directory, serves it locally, watches project inputs, and rebuilds after changes.
+Run this from the directory containing `sklair.json`:
 
-```sh
-sklair serve --port 8080
+```bash title="Terminal"
+sklair serve
 ```
 
-The development build receives a small reload client which is not present in ordinary `sklair build` output. After a successful rebuild, connected pages refresh automatically.
+Sklair builds the project into a temporary directory, serves it locally, and watches the source, component, and layout directories. Connected pages refresh after a successful rebuild.
 
-## Useful flags
+The development build contains a small reload client. A normal `#!bash sklair build` does not include it of course.
 
-```text
--host string
-    Host to listen on. Default: localhost.
+## Choose the address
 
--port int
-    Requested port. Zero asks Sklair to acquire an available port.
+Use `--port` to request a port and `--host` to change the listening address:
 
--auto-refresh bool
-    Refresh connected previews after rebuilds. Default: true.
+```bash title="Terminal"
+sklair serve --host 0.0.0.0 --port 1234
 ```
 
-Sklair's flag syntax accepts forms such as `--auto-refresh=false`.
+| Flag                    | Default            | Purpose                                            |
+| ----------------------- | ------------------ | -------------------------------------------------- |
+| `#!bash --host`         | `#!text localhost` | Address on which the server listens.               |
+| `#!bash --port`         | `#!text 0`         | Requested port. Zero chooses an available port.    |
+| `#!bash --auto-refresh` | `#!text true`      | Refresh connected pages after successful rebuilds. |
+
+Boolean values use Sklair's ordinary flag syntax:
+
+```bash
+sklair serve --auto-refresh=false
+```
 
 <!-- TODO: -open and -watch -->
 
-## What is watched
+!!! warning "Rebuild failures"
 
-The input, component, and layout directories are watched. Paths already beneath `input` are covered by its recursive watcher; configured directories outside it receive their own watcher, with each event currently triggering a complete build.
+    If a rebuild fails, Sklair prints the compiler error and exits the development server. Fix the source and run `#!bash sklair serve` again.
 
-If a rebuild fails, the server command reports the compiler error and exits. Fix the source and start it again.
-<!-- TODO: nice sklair error pages. for this at that point just use go's embedded filesystem to store all our runtime and ws stuff temporarily including the error page -->
-
-A custom port can be specified as follows:
-
-```sh
-sklair serve --host 0.0.0.0 --port 1234
-```
+<!-- TODO: keep the server alive and serve a Sklair error page from Go's embedded filesystem -->

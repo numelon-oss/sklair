@@ -13,6 +13,7 @@
 		"!.htaccess",
 		"*.md",
 		"*.psd",
+		"/schema",
 		"/docs/navigation.json",
 		"/docs/config.json"
 	],

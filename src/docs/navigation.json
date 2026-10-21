@@ -1,3 +1,11 @@
 {
-  "order": ["getting-started"]
+  "directories": {
+    ".": {
+      "order": ["getting-started"]
+    },
+    "getting-started": {
+      "order": ["project-structure", "your-first-build", "development-server"],
+      "numbered": true
+    }
+  }
 }

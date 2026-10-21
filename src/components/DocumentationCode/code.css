@@ -1,61 +1,193 @@
+.documentation-article {
+    --documentation-code-background: var(--sklair-colour-code);
+    --documentation-code-ink: var(--sklair-colour-code-ink);
+    --documentation-code-toolbar: #241a17;
+    --documentation-code-toolbar-ink: #e6d7cd;
+    --documentation-code-control: #2b211d;
+    --documentation-code-control-border: rgb(255 238 224 / 24%);
+    --documentation-code-control-hover: #382a24;
+    --documentation-code-rule: rgb(255 238 224 / 16%);
+    --documentation-code-gutter: #806d64;
+    --documentation-code-gutter-rule: rgb(255 238 224 / 14%);
+    --documentation-token-comment: #9b8478;
+    --documentation-token-punctuation: #d1bfb4;
+    --documentation-token-warm: #efad73;
+    --documentation-token-number: #ffd08a;
+    --documentation-token-string: #a9d6a5;
+    --documentation-token-operator: #f2d5a4;
+    --documentation-token-function: #d8aff0;
+    --documentation-token-variable: #91cbd8;
+}
+
 .documentation-article pre {
     border-radius: 3px;
+    background: var(--documentation-code-background);
+    color: var(--documentation-code-ink);
 }
 
 .documentation-code-block {
-    position: relative;
     margin: 0 0 1.4rem;
+    overflow: hidden;
+    border-radius: 3px;
+    background: var(--documentation-code-background);
 }
 
 .documentation-code-block pre {
+    --documentation-code-padding: clamp(0.75rem, 2vw, 1rem);
+
     margin: 0;
-    padding-top: 3.5rem;
+    padding: var(--documentation-code-padding);
+    border-radius: 0;
+}
+
+.documentation-code-block__toolbar {
+    display: flex;
+    min-height: 3rem;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1rem;
+    padding: 0.55rem 0.7rem 0.55rem 1rem;
+    border-bottom: 1px solid var(--documentation-code-rule);
+    background: var(--documentation-code-toolbar);
+}
+
+.documentation-code-block__title {
+    margin-right: auto;
+    color: var(--documentation-code-toolbar-ink);
+    font: 600 0.74rem/1.4 var(--sklair-font-code);
 }
 
 .documentation-code-block__copy {
-    position: absolute;
-    z-index: 1;
-    top: 0.7rem;
-    right: 0.7rem;
     min-width: 4.25rem;
     min-height: 2rem;
     padding: 0.35rem 0.65rem;
-    border: 1px solid rgb(255 238 224 / 24%);
+    border: 1px solid var(--documentation-code-control-border);
     border-radius: 2px;
-    background: #2b211d;
-    color: #f8eee6;
+    background: var(--documentation-code-control);
+    color: var(--documentation-code-toolbar-ink);
     cursor: pointer;
     font-size: 0.7rem;
     font-weight: 800;
 }
 
+.documentation-code-block pre.line-numbers {
+    position: relative;
+    padding-left: 3.5rem;
+    counter-reset: linenumber;
+}
+
+.documentation-code-block pre.line-numbers > code {
+    position: relative;
+    white-space: inherit;
+}
+
+.line-numbers .line-numbers-rows {
+    position: absolute;
+    top: 0;
+    left: -2.75rem;
+    width: 2.15rem;
+    border-right: 1px solid var(--documentation-code-gutter-rule);
+    color: var(--documentation-code-gutter);
+    letter-spacing: -1px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.line-numbers-rows > span {
+    display: block;
+    counter-increment: linenumber;
+}
+
+.line-numbers-rows > span::before {
+    display: block;
+    padding-right: 0.5rem;
+    content: counter(linenumber);
+    text-align: right;
+}
+
+.line-numbers-row--highlighted::before {
+    transform: translateY(-1.5px);
+}
+
+.documentation-code-block pre[data-line] {
+    position: relative;
+}
+
+.documentation-code-block .line-highlight {
+    position: absolute;
+    right: 0;
+    left: 0;
+    margin-top: calc(var(--documentation-code-padding) - 1.5px);
+    background: linear-gradient(to right, rgb(218 164 82 / 15%), rgb(218 164 82 / 4%));
+    border-left: 2px solid #d8a655;
+    line-height: inherit;
+    pointer-events: none;
+    white-space: pre;
+}
+
+.documentation-admonition {
+    margin: 1.5rem 0;
+    border: 1px solid var(--sklair-rule-strong);
+    border-left: 3px solid var(--sklair-colour-accent-strong);
+    background: var(--sklair-colour-surface);
+}
+
+.documentation-admonition__title {
+    display: block;
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid var(--sklair-rule);
+    color: var(--sklair-colour-ink);
+    font-size: 0.8rem;
+}
+
+.documentation-admonition__body {
+    padding: 0.9rem 1rem;
+}
+
+.documentation-admonition__body > :first-child {
+    margin-top: 0;
+}
+
+.documentation-admonition__body > :last-child {
+    margin-bottom: 0;
+}
+
+.documentation-admonition--warning,
+.documentation-admonition--danger {
+    border-left-color: #b84d3f;
+}
+
+.documentation-admonition--tip {
+    border-left-color: #5d8a65;
+}
+
 .documentation-code-block__copy:hover,
 .documentation-code-block__copy:focus-visible {
     border-color: #e2b668;
-    background: #382a24;
+    background: var(--documentation-code-control-hover);
 }
 
 .documentation-article code[class*="language-"] {
-    color: var(--sklair-colour-code-ink);
+    color: var(--documentation-code-ink);
     text-shadow: none;
 }
 
 .documentation-article :not(pre) > code[class*="language-"] {
     border-color: var(--sklair-rule-strong);
     border-radius: 2px;
-    background: var(--sklair-colour-code);
+    background: var(--documentation-code-background);
 }
 
 .documentation-article .token.comment,
 .documentation-article .token.prolog,
 .documentation-article .token.doctype,
 .documentation-article .token.cdata {
-    color: #9b8478;
+    color: var(--documentation-token-comment);
     font-style: italic;
 }
 
 .documentation-article .token.punctuation {
-    color: #d1bfb4;
+    color: var(--documentation-token-punctuation);
 }
 
 .documentation-article .token.namespace {
@@ -69,12 +201,12 @@
 .documentation-article .token.deleted,
 .documentation-article .token.keyword,
 .documentation-article .token.atrule {
-    color: #efad73;
+    color: var(--documentation-token-warm);
 }
 
 .documentation-article .token.boolean,
 .documentation-article .token.number {
-    color: #ffd08a;
+    color: var(--documentation-token-number);
 }
 
 .documentation-article .token.selector,
@@ -83,7 +215,7 @@
 .documentation-article .token.char,
 .documentation-article .token.builtin,
 .documentation-article .token.inserted {
-    color: #a9d6a5;
+    color: var(--documentation-token-string);
 }
 
 .documentation-article .token.operator,
@@ -91,18 +223,18 @@
 .documentation-article .token.url,
 .documentation-article .language-css .token.string,
 .documentation-article .style .token.string {
-    color: #f2d5a4;
+    color: var(--documentation-token-operator);
 }
 
 .documentation-article .token.function,
 .documentation-article .token.class-name {
-    color: #d8aff0;
+    color: var(--documentation-token-function);
 }
 
 .documentation-article .token.regex,
 .documentation-article .token.important,
 .documentation-article .token.variable {
-    color: #91cbd8;
+    color: var(--documentation-token-variable);
 }
 
 .documentation-article .token.important,
@@ -118,13 +250,39 @@
     cursor: help;
 }
 
-@media (max-width: 32rem) {
-    .documentation-code-block pre {
-        padding-top: 3.25rem;
-    }
+:root:not([data-theme="dark"]) .documentation-article {
+    --documentation-code-background: #f8eee4;
+    --documentation-code-ink: #2d201b;
+    --documentation-code-toolbar: #efe0d2;
+    --documentation-code-toolbar-ink: #4f392f;
+    --documentation-code-control: #fbf4ed;
+    --documentation-code-control-border: rgb(72 45 34 / 28%);
+    --documentation-code-control-hover: #f2dfbd;
+    --documentation-code-rule: rgb(72 45 34 / 20%);
+    --documentation-code-gutter: #8a7164;
+    --documentation-code-gutter-rule: rgb(72 45 34 / 18%);
+    --documentation-token-comment: #765f54;
+    --documentation-token-punctuation: #6c574e;
+    --documentation-token-warm: #a34e25;
+    --documentation-token-number: #8a551b;
+    --documentation-token-string: #4f702f;
+    --documentation-token-operator: #715314;
+    --documentation-token-function: #7a467f;
+    --documentation-token-variable: #326777;
+}
 
-    .documentation-code-block__copy {
-        top: 0.6rem;
-        right: 0.6rem;
+:root:not([data-theme="dark"]) .documentation-code-block .line-highlight {
+    border-left-color: #a5661f;
+    background: linear-gradient(to right, rgb(181 117 35 / 18%), rgb(181 117 35 / 5%));
+}
+
+:root:not([data-theme="dark"]) .documentation-code-block__copy:hover,
+:root:not([data-theme="dark"]) .documentation-code-block__copy:focus-visible {
+    border-color: #8a551b;
+}
+
+@media (max-width: 32rem) {
+    .documentation-code-block__toolbar {
+        padding-left: 0.75rem;
     }
 }
