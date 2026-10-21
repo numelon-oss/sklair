@@ -22,9 +22,6 @@ func init() {
 
 			sklairDir := filepath.Join(configDir, ".sklair")
 
-			tempDir := filepath.Join(sklairDir, "temp")
-			generatedDir := filepath.Join(sklairDir, "generated")
-
 			if err == nil {
 				outputDir := filepath.Join(configDir, config.Output)
 				err = os.RemoveAll(outputDir)
@@ -33,14 +30,9 @@ func init() {
 					return 1
 				}
 			}
-			err = os.RemoveAll(tempDir)
+			err = os.RemoveAll(sklairDir)
 			if err != nil {
-				logger.Error("could not remove Sklair's temp directory %s : %s", tempDir, err.Error())
-				return 1
-			}
-			err = os.RemoveAll(generatedDir)
-			if err != nil {
-				logger.Error("could not remove Sklair's generated directory %s : %s", generatedDir, err.Error())
+				logger.Error("could not remove Sklair's workspace directory %s : %s", sklairDir, err.Error())
 				return 1
 			}
 

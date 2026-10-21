@@ -9,6 +9,8 @@ build
 src/build
 **.zip
 
+src/schema
+
 # private files
 PRIVATE-notes.md
 TODO/

@@ -57,6 +57,8 @@ jobs:
               -ldflags "-X sklair/constants.Version=$VERSION" \
               ./tools/schema > schema-dist/sklair-$VERSION.schema.json
 
+            cp schema-dist/sklair-$VERSION.schema.json schema-dist/sklair.schema.json
+
         - name: Upload schema artefact
           uses: actions/upload-artifact@v6
           with:
