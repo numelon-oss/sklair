@@ -35,7 +35,7 @@
                 local preferred = {
                     ProjectConfig = {
                         "$schema", "input", "components", "layouts", "output", "exclude",
-                        "excludeCompile", "templates", "hooks", "preventFOUC", "minify", "obfuscateJS",
+                        "excludeCompile", "templates", "serve", "hooks", "preventFOUC", "minify", "obfuscateJS",
                     },
                     Hooks = { "enabled", "path", "http" },
                     HooksHttpOptions = {
@@ -44,6 +44,8 @@
                     },
                     PreventFOUC = { "enabled", "colour" },
                     ObfuscateJS = { "enabled" },
+                    ServeOptions = { "rewrites" },
+                    ServeRewrite = { "from", "to" },
                 }
 
                 local function referenced_name(property)

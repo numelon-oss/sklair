@@ -62,6 +62,9 @@ func projectDefaults() map[string]any {
 			"enabled": defaults.PreventFOUC.Enabled,
 			"colour":  defaults.PreventFOUC.Colour,
 		},
+		"serve": map[string]any{
+			"rewrites": []sklairConfig.ServeRewrite{},
+		},
 	}
 }
 

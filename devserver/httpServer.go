@@ -60,7 +60,7 @@ func try404(root string, w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "404 not found", http.StatusNotFound)
 }
 
-func Serve(listener net.Listener, tmp string, wsThing *WS) error {
+func Serve(listener net.Listener, tmp string, wsThing *WS, rewrites []Rewrite) error {
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("cache-control", "no-cache, no-store, must-revalidate")
 
@@ -72,6 +72,21 @@ func Serve(listener net.Listener, tmp string, wsThing *WS) error {
 		if _, err := os.Stat(path); err == nil {
 			http.ServeFile(w, r, path)
 			return
+		}
+
+		if r.Method == http.MethodGet || r.Method == http.MethodHead {
+			for _, rewrite := range rewrites {
+				if !rewrite.matches(r.URL.Path) {
+					continue
+				}
+
+				path = filepath.Join(tmp, filepath.FromSlash(rewrite.target))
+				if file, err := os.Stat(path); err == nil && !file.IsDir() {
+					http.ServeFile(w, r, path)
+					return
+				}
+				break
+			}
 		}
 
 		try404(tmp, w, r)

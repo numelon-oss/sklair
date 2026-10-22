@@ -91,6 +91,14 @@ func runServe(ctx context.Context, host string, port int, open, autoRefresh, wat
 	if err != nil {
 		return fmt.Errorf("could not load sklair.json: %w", err)
 	}
+	var rewriteValues []sklairConfig.ServeRewrite
+	if config.Serve != nil {
+		rewriteValues = config.Serve.Rewrites
+	}
+	rewrites, err := devserver.CompileRewrites(rewriteValues)
+	if err != nil {
+		return err
+	}
 	tmp, err := os.MkdirTemp("", "sklair-")
 	if err != nil {
 		return fmt.Errorf("could not create temporary directory: %w", err)
@@ -124,7 +132,7 @@ func runServe(ctx context.Context, host string, port int, open, autoRefresh, wat
 	ws := devserver.NewWS()
 	defer close(ws.Send)
 	serverErrors := make(chan error, 1)
-	go func() { serverErrors <- devserver.Serve(listener, tmp, ws) }()
+	go func() { serverErrors <- devserver.Serve(listener, tmp, ws, rewrites) }()
 	listenAddress := net.JoinHostPort(strings.Trim(host, "[]"), strconv.Itoa(port))
 	if host == "" {
 		listenAddress = listener.Addr().String()
