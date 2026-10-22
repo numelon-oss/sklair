@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="./search.css" rel="stylesheet">
+    <script type="module" src="./search.mjs"></script>
+</head>
+
+<body>
+    <dialog id="documentation-search-dialog" class="documentation-search" aria-label="Search documentation"
+        data-documentation-search>
+        <form class="documentation-search__form" role="search">
+            <label class="sklair-visually-hidden" for="documentation-search-input">Search documentation</label>
+            <input id="documentation-search-input" type="search" placeholder="Search documentation"
+                autocomplete="off" spellcheck="false" aria-controls="documentation-search-results">
+            <button class="documentation-search__close" type="button" aria-label="Close documentation search"
+                title="Close documentation search" data-documentation-search-close>
+                <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+            </button>
+        </form>
+
+        <div class="documentation-search__information">
+            <p class="documentation-search__status" aria-live="polite">Search titles, headings, and documentation content.</p>
+            <span class="documentation-search__keys">
+                <span><kbd>↑</kbd><kbd>↓</kbd> navigate</span>
+                <span><kbd>Enter</kbd> open</span>
+                <span><kbd>Esc</kbd> close</span>
+            </span>
+        </div>
+
+        <div class="documentation-search__results">
+            <p class="documentation-search__empty" hidden>No matching documentation.</p>
+            <ol id="documentation-search-results"></ol>
+        </div>
+
+        <DocumentationSearchResult></DocumentationSearchResult>
+    </dialog>
+</body>
+
+</html>

@@ -3,6 +3,7 @@ package markdown
 import (
 	"bytes"
 	"fmt"
+	"sort"
 	"strings"
 	"unicode"
 
@@ -13,9 +14,13 @@ import (
 	"github.com/yuin/goldmark/text"
 )
 
-var safeRenderer = goldmark.New(goldmark.WithExtensions(extension.GFM, inlineCodeExtension{}))
+var safeRenderer = goldmark.New(goldmark.WithExtensions(
+	extension.GFM,
+	inlineCodeExtension{},
+	documentationExtension{},
+))
 var rawRenderer = goldmark.New(
-	goldmark.WithExtensions(extension.GFM, inlineCodeExtension{}),
+	goldmark.WithExtensions(extension.GFM, inlineCodeExtension{}, documentationExtension{}),
 	goldmark.WithRendererOptions(goldmarkHTML.WithUnsafe()),
 )
 
@@ -40,8 +45,9 @@ type Section struct {
 }
 
 func Parse(source string) *Document {
-	content := []byte(source)
+	content := []byte(preprocessAdmonitions(source))
 	root := safeRenderer.Parser().Parse(text.NewReader(content))
+	prepareAdmonitions(root, content)
 	document := &Document{source: content, root: root}
 	document.headings = prepareHeadings(root, content)
 	document.sections = prepareSections(root, content, document.headings)
@@ -49,6 +55,13 @@ func Parse(source string) *Document {
 }
 
 func (d *Document) HTML(rawHTML bool) (string, error) {
+	return d.HTMLWithLinks(rawHTML, nil)
+}
+
+func (d *Document) HTMLWithLinks(rawHTML bool, links map[string]string) (string, error) {
+	restore := d.replaceLinks(links)
+	defer restore()
+
 	var output bytes.Buffer
 	renderer := safeRenderer.Renderer()
 	if rawHTML {
@@ -58,6 +71,59 @@ func (d *Document) HTML(rawHTML bool) (string, error) {
 		return "", err
 	}
 	return output.String(), nil
+}
+
+func (d *Document) Links() []string {
+	unique := make(map[string]struct{})
+	_ = ast.Walk(d.root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if entering {
+			if link, ok := node.(*ast.Link); ok {
+				unique[string(link.Destination)] = struct{}{}
+			}
+		}
+		return ast.WalkContinue, nil
+	})
+
+	links := make([]string, 0, len(unique))
+	for link := range unique {
+		links = append(links, link)
+	}
+	sort.Strings(links)
+	return links
+}
+
+func (d *Document) replaceLinks(replacements map[string]string) func() {
+	if len(replacements) == 0 {
+		return func() {}
+	}
+
+	type replacedLink struct {
+		link        *ast.Link
+		destination []byte
+	}
+	replaced := make([]replacedLink, 0)
+	_ = ast.Walk(d.root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
+		if !entering {
+			return ast.WalkContinue, nil
+		}
+		link, ok := node.(*ast.Link)
+		if !ok {
+			return ast.WalkContinue, nil
+		}
+		destination, ok := replacements[string(link.Destination)]
+		if !ok {
+			return ast.WalkContinue, nil
+		}
+		replaced = append(replaced, replacedLink{link: link, destination: link.Destination})
+		link.Destination = []byte(destination)
+		return ast.WalkContinue, nil
+	})
+
+	return func() {
+		for _, replacement := range replaced {
+			replacement.link.Destination = replacement.destination
+		}
+	}
 }
 
 func (d *Document) Headings() []Heading {

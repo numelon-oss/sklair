@@ -27,10 +27,10 @@ type PreventFOUC struct {
 
 type ServeRewrite struct {
 	// The request path pattern to match. Named segments begin with ':' and a final '*' matches the remaining path.
-	From string `json:"from" jsonschema:"title=Request path pattern"`
+	From string `json:"from" jsonschema:"required,title=Request path pattern"`
 
 	// The generated file that matching requests should serve.
-	To string `json:"to" jsonschema:"title=Generated target file"`
+	To string `json:"to" jsonschema:"required,title=Generated target file"`
 }
 
 type ServeOptions struct {
@@ -206,7 +206,11 @@ var SchemaURL string
 
 func init() {
 	regularVersion := constants.Version
-	SchemaURL = "https://sklair.numelon.com/schema/sklair-" + regularVersion + ".schema.json"
+	if regularVersion == "development" {
+		SchemaURL = "https://github.com/numelon-oss/sklair/releases/latest/download/sklair.schema.json"
+	} else {
+		SchemaURL = "https://github.com/numelon-oss/sklair/releases/download/" + regularVersion + "/sklair-" + regularVersion + ".schema.json"
+	}
 
 	DefaultConfig.SchemaURL = SchemaURL
 }

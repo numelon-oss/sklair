@@ -45,6 +45,9 @@ func rewritePattern(value string) ([]string, error) {
 	if value == "" || !strings.HasPrefix(value, "/") {
 		return nil, fmt.Errorf("pattern %q must begin with '/'", value)
 	}
+	if strings.Contains(value, "\\") || strings.ContainsRune(value, 0) {
+		return nil, fmt.Errorf("pattern %q must use forward slashes and cannot contain null bytes", value)
+	}
 	if strings.ContainsAny(value, "?#") {
 		return nil, fmt.Errorf("pattern %q cannot contain a query or fragment", value)
 	}
@@ -77,6 +80,9 @@ func rewritePattern(value string) ([]string, error) {
 func rewriteTarget(value string) (string, error) {
 	if value == "" || !strings.HasPrefix(value, "/") {
 		return "", fmt.Errorf("target %q must begin with '/'", value)
+	}
+	if strings.Contains(value, "\\") || strings.ContainsRune(value, 0) {
+		return "", fmt.Errorf("target %q must use forward slashes and cannot contain null bytes", value)
 	}
 	if strings.ContainsAny(value, "?#:*") {
 		return "", fmt.Errorf("target %q must name one generated file", value)

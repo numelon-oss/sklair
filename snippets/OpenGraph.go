@@ -30,7 +30,7 @@ func newMetaNode(name, property, content string) *html.Node {
 /*
 <OpenGraph
   title="Sklair | HTML deserved better."
-  description="Sklair is a modern compiler…"
+  description="Sklair is a modern compiler..."
   image="https://sklair.numelon.com/img/opengraph.jpg"
   url="https://sklair.numelon.com"
   siteName="Sklair"

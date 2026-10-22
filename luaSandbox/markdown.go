@@ -21,6 +21,7 @@ func (s *Scope) openMarkdown() {
 	methods := L.NewTable()
 	L.SetFuncs(methods, map[string]lua.LGFunction{
 		"headings": markdownHeadings,
+		"links":    markdownLinks,
 		"sections": markdownSections,
 		"to_html":  markdownToHTML,
 	})
@@ -48,13 +49,13 @@ func (s *Scope) parseMarkdown(L *lua.LState) int {
 
 func markdownToHTML(L *lua.LState) int {
 	document := checkMarkdownDocument(L, 1)
-	rawHTML, err := markdownRenderOptions(L)
+	options, err := markdownRenderOptions(L)
 	if err != nil {
 		L.RaiseError("%s", err.Error())
 		return 0
 	}
 
-	output, err := document.document.HTML(rawHTML)
+	output, err := document.document.HTMLWithLinks(options.rawHTML, options.links)
 	if err != nil {
 		L.Push(lua.LNil)
 		L.Push(lua.LString(err.Error()))
@@ -64,16 +65,21 @@ func markdownToHTML(L *lua.LState) int {
 	return 1
 }
 
-func markdownRenderOptions(L *lua.LState) (bool, error) {
+type markdownOptions struct {
+	rawHTML bool
+	links   map[string]string
+}
+
+func markdownRenderOptions(L *lua.LState) (markdownOptions, error) {
 	if L.GetTop() > 2 {
-		return false, fmt.Errorf("Markdown document to_html expects no arguments or one options table")
+		return markdownOptions{}, fmt.Errorf("Markdown document to_html expects no arguments or one options table")
 	}
 	if L.GetTop() == 1 || L.Get(2) == lua.LNil {
-		return false, nil
+		return markdownOptions{}, nil
 	}
 	options, ok := L.Get(2).(*lua.LTable)
 	if !ok {
-		return false, fmt.Errorf("Markdown document to_html options must be a table or nil")
+		return markdownOptions{}, fmt.Errorf("Markdown document to_html options must be a table or nil")
 	}
 
 	unknown := make([]string, 0)
@@ -84,27 +90,69 @@ func markdownRenderOptions(L *lua.LState) (bool, error) {
 			nonString = true
 			return
 		}
-		if string(name) != "rawHTML" {
+		if string(name) != "rawHTML" && string(name) != "links" {
 			unknown = append(unknown, string(name))
 		}
 	})
 	if nonString {
-		return false, fmt.Errorf("Markdown document to_html option names must be strings")
+		return markdownOptions{}, fmt.Errorf("Markdown document to_html option names must be strings")
 	}
 	if len(unknown) > 0 {
 		sort.Strings(unknown)
-		return false, fmt.Errorf("unknown Markdown document to_html option %q", unknown[0])
+		return markdownOptions{}, fmt.Errorf("unknown Markdown document to_html option %q", unknown[0])
 	}
 
+	result := markdownOptions{}
 	value := options.RawGetString("rawHTML")
-	if value == lua.LNil {
-		return false, nil
+	if value != lua.LNil {
+		rawHTML, ok := value.(lua.LBool)
+		if !ok {
+			return markdownOptions{}, fmt.Errorf("Markdown document to_html option %q must be a boolean", "rawHTML")
+		}
+		result.rawHTML = bool(rawHTML)
 	}
-	rawHTML, ok := value.(lua.LBool)
-	if !ok {
-		return false, fmt.Errorf("Markdown document to_html option %q must be a boolean", "rawHTML")
+
+	links := options.RawGetString("links")
+	if links != lua.LNil {
+		table, ok := links.(*lua.LTable)
+		if !ok {
+			return markdownOptions{}, fmt.Errorf("Markdown document to_html option %q must be a table", "links")
+		}
+		result.links = make(map[string]string)
+		var linkError error
+		table.ForEach(func(key lua.LValue, value lua.LValue) {
+			if linkError != nil {
+				return
+			}
+			from, fromOK := key.(lua.LString)
+			to, toOK := value.(lua.LString)
+			if !fromOK || !toOK {
+				linkError = fmt.Errorf("Markdown document to_html links must contain only string keys and values")
+				return
+			}
+			result.links[string(from)] = string(to)
+		})
+		if linkError != nil {
+			return markdownOptions{}, linkError
+		}
 	}
-	return bool(rawHTML), nil
+	return result, nil
+}
+
+func markdownLinks(L *lua.LState) int {
+	if L.GetTop() != 1 {
+		L.RaiseError("Markdown document links expects no arguments")
+		return 0
+	}
+	document := checkMarkdownDocument(L, 1)
+	documentLinks := document.document.Links()
+	links := L.CreateTable(len(documentLinks), 0)
+	document.scope.tableKinds[links] = arrayTable
+	for _, link := range documentLinks {
+		links.Append(lua.LString(link))
+	}
+	L.Push(links)
+	return 1
 }
 
 func markdownHeadings(L *lua.LState) int {

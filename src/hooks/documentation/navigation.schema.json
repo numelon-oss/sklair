@@ -1,0 +1,42 @@
+{
+	"$schema": "https://json-schema.org/draft/2020-12/schema",
+	"type": "object",
+	"properties": {
+		"directories": {
+			"type": "object",
+			"propertyNames": {
+				"pattern": "^(\\.|[^/\\\\]+(?:/[^/\\\\]+)*)$"
+			},
+			"additionalProperties": {
+				"type": "object",
+				"properties": {
+					"order": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"pattern": "^[^/\\\\]+$"
+						},
+						"uniqueItems": true
+					},
+					"numbered": {
+						"type": "boolean"
+					},
+					"last": {
+						"type": "array",
+						"items": {
+							"type": "string",
+							"minLength": 1,
+							"pattern": "^[^/\\\\]+$"
+						},
+						"uniqueItems": true
+					}
+				},
+				"required": ["order"],
+				"additionalProperties": false
+			}
+		}
+	},
+	"required": ["directories"],
+	"additionalProperties": false
+}

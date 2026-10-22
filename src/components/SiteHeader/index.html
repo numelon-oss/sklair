@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <link href="./header.css" rel="stylesheet">
+</head>
+
+<body>
+    <a class="sklair-skip-link" href="#main">Skip to content</a>
+
+    <header class="site-header">
+        <nav class="site-header__inner" aria-label="Primary navigation">
+            <a class="site-header__brand" href="/" aria-label="Sklair homepage">
+                <img class="site-header__logo site-header__logo--dark" src="/branding/logo-monochrome.dark.svg" alt="Sklair">
+                <img class="site-header__logo site-header__logo--light" src="/branding/logo-monochrome.light.svg" alt="Sklair">
+            </a>
+
+            <div class="site-header__desktop">
+                <a href="/docs/">Documentation</a>
+                <a href="/download/">Download</a>
+                <a href="https://github.com/numelon-oss/sklair" target="_blank" rel="noreferrer">GitHub</a>
+                <button class="site-header__search" type="button" aria-label="Search documentation"
+                    title="Search documentation" aria-haspopup="dialog" aria-controls="documentation-search-dialog"
+                    data-documentation-search-open sklair-if="search">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <span class="site-header__search-label">Search</span>
+                    <kbd data-documentation-search-shortcut>⌘ K</kbd>
+                </button>
+                <ThemeControl></ThemeControl>
+            </div>
+
+            <div class="site-header__mobile">
+                <button class="site-header__search" type="button" aria-label="Search documentation"
+                    title="Search documentation" aria-haspopup="dialog" aria-controls="documentation-search-dialog"
+                    data-documentation-search-open sklair-if="search">
+                    <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+                    <span class="site-header__search-label">Search</span>
+                    <kbd data-documentation-search-shortcut>⌘ K</kbd>
+                </button>
+                <ThemeControl></ThemeControl>
+
+                <details class="site-header__menu">
+                    <summary>
+                        <span class="sklair-visually-hidden site-header__menu-open-label">Open navigation</span>
+                        <span class="sklair-visually-hidden site-header__menu-close-label">Close navigation</span>
+                        <i class="fa-solid fa-bars site-header__menu-open-icon" aria-hidden="true"></i>
+                        <i class="fa-solid fa-xmark site-header__menu-close-icon" aria-hidden="true"></i>
+                    </summary>
+
+                    <div class="site-header__panel">
+                        <a href="/docs/">Documentation</a>
+                        <a href="/download/">Download</a>
+                        <a href="https://github.com/numelon-oss/sklair" target="_blank" rel="noreferrer">GitHub</a>
+                    </div>
+                </details>
+            </div>
+        </nav>
+    </header>
+</body>
+
+</html>

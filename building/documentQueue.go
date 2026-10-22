@@ -97,12 +97,12 @@ func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]pl
 	for _, request := range q.requests {
 		output := filepath.Join(paths.output, filepath.FromSlash(request.output))
 		key := filepath.Clean(output)
-		provenance := request.source
+		origin := request.source
 		description := fmt.Sprintf("generated request %d from hook %s", request.index, request.hook)
-		if provenance != "" {
-			description += " with source " + provenance
+		if origin != "" {
+			description += " with source " + origin
 		} else {
-			provenance = description
+			origin = description
 		}
 		if previous, exists := owners[key]; exists {
 			return nil, fmt.Errorf("output path %s is claimed by both %s and %s", output, previous, description)
@@ -110,7 +110,7 @@ func (q *documentQueue) freeze(paths buildPaths, owners map[string]string) ([]pl
 		owners[key] = description
 
 		generated = append(generated, plannedDocument{
-			plannedFile: plannedFile{source: provenance, output: output},
+			plannedFile: plannedFile{source: origin, output: output},
 			generation: &generation{
 				layout: request.layout,
 				body:   request.body,

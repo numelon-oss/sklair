@@ -322,7 +322,7 @@ func (s *Scope) protectReadOnly(name string) {
 					arguments[i] = L.Get(i + 1)
 				}
 				if err := L.CallByParam(lua.P{Fn: original, NRet: lua.MultRet, Protect: true}, arguments...); err != nil {
-					L.RaiseError(err.Error())
+					L.RaiseError("%s", err.Error())
 					return 0
 				}
 				return L.GetTop() - argumentCount

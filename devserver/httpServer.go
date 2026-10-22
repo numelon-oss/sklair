@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 
 	"github.com/numelon-oss/go-logger"
 
@@ -23,7 +24,7 @@ func AcquirePort(addr string, port int) (net.Listener, int, error) {
 			port = 8080 + i
 
 			logger.Debug("trying port %d", port)
-			listener, err = net.Listen("tcp", addr+":"+strconv.Itoa(port))
+			listener, err = net.Listen("tcp", net.JoinHostPort(strings.Trim(addr, "[]"), strconv.Itoa(port)))
 			if err == nil {
 				break
 			}
@@ -34,7 +35,7 @@ func AcquirePort(addr string, port int) (net.Listener, int, error) {
 		}
 	} else {
 		// otherwise, an explicit port was provided so TRY to bind to it regularly
-		listener, err = net.Listen("tcp", addr+":"+strconv.Itoa(port))
+		listener, err = net.Listen("tcp", net.JoinHostPort(strings.Trim(addr, "[]"), strconv.Itoa(port)))
 		if err != nil {
 			return nil, 0, err
 		}
@@ -59,7 +60,7 @@ func try404(root string, w http.ResponseWriter, r *http.Request) {
 	http.Error(w, "404 not found", http.StatusNotFound)
 }
 
-func Serve(listener net.Listener, tmp string, port int, wsThing *WS, rewrites []Rewrite) {
+func Serve(listener net.Listener, tmp string, wsThing *WS, rewrites []Rewrite) error {
 	staticHandler := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("cache-control", "no-cache, no-store, must-revalidate")
 
@@ -95,8 +96,5 @@ func Serve(listener net.Listener, tmp string, port int, wsThing *WS, rewrites []
 	mux.Handle("/"+WSPath, websocket.Handler(wsThing.HandleWS))
 	mux.Handle("/", staticHandler)
 
-	logger.Info("Will be listening on http://localhost:" + strconv.Itoa(port) + "/")
-	if err := http.Serve(listener, mux); err != nil {
-		logger.Error(err.Error())
-	}
+	return http.Serve(listener, mux)
 }

@@ -1,216 +1,179 @@
 <!DOCTYPE html>
-<html lang="en" class="bg-background text-black">
+<html lang="en">
 
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-    <title>Sklair | HTML deserved better.</title>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Sklair | Build ambitious websites. Ship plain HTML.</title>
+	<link href="/styles/home.css" rel="stylesheet">
 </head>
 
-<body class="font-secondary">
-    <!-- THESE ARE MOSTLY HEAD COMPONENTS! -->
-    <CommonHead></CommonHead>
-    <Analytics></Analytics>
-    <OpenGraph site_name="Sklair" title="Sklair | HTML deserved better."
-        description="Sklair is a compiler that extends HTML with build-time structure, composition, and logic."
-        image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com"></OpenGraph>
-    <!-- --------------------------------- -->
+<body>
+	<SiteHead></SiteHead>
+	<Analytics></Analytics>
+	<OpenGraph site_name="Sklair" title="Sklair | Build ambitious websites. Ship plain HTML."
+		description="Sklair is an ahead-of-time whole-project HTML compiler for components, compile-time Lua, and document generation."
+		image="https://sklair.numelon.com/img/opengraph.jpg" url="https://sklair.numelon.com"></OpenGraph>
+	<DocumentationCode></DocumentationCode>
 
-    <MenuBar></MenuBar>
+	<SiteHeader></SiteHeader>
 
-    <section class="w-full min-h-screen flex flex-col justify-center bg-background px-6">
+	<main id="main">
+		<section class="home-hero">
+			<div class="home-hero__inner sklair-container">
+				<div class="home-hero__content">
+					<h1>Build ambitious websites, ship plain HTML.</h1>
+					<p>
+						Sklair is an ahead-of-time whole-project HTML compiler. Compose with components, run Lua at
+						compile time, generate complete document trees, and leave the browser with exactly what it
+						understands.
+					</p>
+					<div class="home-actions">
+						<a class="home-action home-action--primary" href="/download/">Download Sklair</a>
+						<a class="home-action" href="/docs/">Read the documentation</a>
+					</div>
+				</div>
 
-        <div
-            class="relative w-full max-w-7xl h-[75vh] mx-auto rounded-2xl overflow-hidden shadow-xl border border-gray-300">
-            <div class="absolute inset-0 z-0 bg-cover bg-center" style="background-image: url('img/hero.jpg');"></div>
-            <div class="absolute inset-0 z-10 bg-orange-950/30 backdrop-brightness-90"></div>
+				<aside class="home-build-proof" aria-label="Example Sklair cold build">
+					<div class="home-build-terminal">
+						<div class="home-build-terminal__command"><span aria-hidden="true">$</span> sklair build</div>
+						<code><span>[INFO]</span> Compiled 83 documents
+<span>[INFO]</span> Generated 44 documents
+<span>[INFO]</span> Copied 40 static files</code>
+						<div class="home-build-terminal__result">
+							<span>Build complete</span>
+							<strong>235.9 ms</strong>
+						</div>
+					</div>
+					<dl class="home-build-metrics">
+						<div>
+							<dt>Documents</dt>
+							<dd>83</dd>
+						</div>
+						<div>
+							<dt>Generated</dt>
+							<dd>44</dd>
+						</div>
+						<div>
+							<dt>Required runtime</dt>
+							<dd>0 KB</dd>
+						</div>
+					</dl>
+				</aside>
+			</div>
+		</section>
 
-            <div class="relative z-20 h-full w-full flex items-end justify-start px-8 pb-12 text-white">
-                <div class="max-w-3xl">
-                    <h1 class="text-4xl sm:text-6xl md:text-7xl font-main mb-4">
-                        HTML deserved better.
-                    </h1>
-                    <p class="text-lg sm:text-xl font-secondary mb-8">
-                        Sklair is a compiler that extends HTML with build-time structure, composition, and logic -
-                        without changing how the web runs.
-                    </p>
+		<section class="home-definition sklair-section">
+			<div class="home-split sklair-container">
+				<h2>A whole-project compiler for HTML.</h2>
+				<div class="home-prose">
+					<p>
+						Sklair starts with real HTML documents, understands their dependencies as one project, and
+						resolves the work the browser should never have been asked to do.
+					</p>
+					<p>
+						Components, props, slots, head contributions, assets, compile-time logic, and generated
+						documents become ordinary HTML files. There is no virtual DOM, hydration pass, or mandatory
+						client runtime left behind.
+					</p>
+				</div>
+			</div>
+		</section>
 
-                    <div class="flex flex-wrap gap-4">
-                        <a href="/download"
-                            class="px-6 py-3 rounded-xl bg-white text-black font-semibold hover:bg-gray-100 transition">
-                            Download
-                        </a>
-                        <a href="https://github.com/numelon-oss/sklair" target="_blank"
-                            class="px-6 py-3 rounded-xl border border-white/40 hover:bg-white/10 transition">
-                            GitHub
-                        </a>
-                    </div>
-                </div>
-            </div>
-        </div>
+		<HomeCompiler></HomeCompiler>
 
-        <div class="mt-10 flex justify-center text-black animate-bounce">
-            <i class="fas fa-chevron-down text-2xl"></i>
-        </div>
+		<section class="home-features sklair-section">
+			<div class="sklair-container">
+				<div class="home-section-heading">
+					<h2>The browser only gets the finished document.</h2>
+					<p>
+						Sklair treats composition and generation as compiler work, while keeping the source recognisably
+						HTML.
+					</p>
+				</div>
 
-    </section>
+				<div class="home-feature-grid">
+					<article class="home-feature home-feature--material home-feature--components">
+						<div class="home-feature__copy">
+							<h3>Structural components</h3>
+							<p>Recursive composition, typed-by-use props, slots, head contributions, and co-located
+								assets.</p>
+						</div>
+						<div class="home-feature__visual home-feature__visual--components sklair-highlight"
+							aria-hidden="true">
+							<pre><code class="language-html">&lt;SiteHeader search="true"&gt;&lt;/SiteHeader&gt;
 
-    <section class="w-full bg-background text-black px-6 py-20">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">
-                What <em>is</em> Sklair?
-            </h2>
+&lt;DocumentationBreadcrumb path="docs/components"&gt;
+&lt;/DocumentationBreadcrumb&gt;
 
-            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
-                Sklair is not a framework. It does not replace the DOM, ship a runtime, or redefine how browsers work.
-                <br><br>
-                Instead, Sklair operates entirely at <strong>build time</strong>, extending HTML with
-                <strong>components, compiler directives, deterministic optimisation, and sandboxed build hooks.</strong>
+&lt;DocumentationNeighbour direction="next"&gt;
+&lt;/DocumentationNeighbour&gt;</code></pre>
+						</div>
+					</article>
 
-                <br><br>
-                All of this while producing plain, standard HTML as output.
-            </p>
-        </div>
-    </section>
+					<article class="home-feature home-feature--lua">
+						<div class="home-feature__copy">
+							<h3>Compile-time Lua</h3>
+							<p>Static work once per definition, dynamic work once per instance, and explicit trusted
+								markup.</p>
+						</div>
+						<div class="home-feature__visual home-feature__visual--code sklair-highlight"
+							aria-hidden="true">
+							<pre><code class="language-lua">local page = markdown.parse(content)
 
-    <section class="w-full bg-alternative text-black px-6 py-20">
-        <div class="max-w-5xl mx-auto">
-            <h2 class="text-3xl sm:text-4xl font-main mb-12 text-center">
-                What Sklair gives you
-            </h2>
+sklair.emit([[&lt;article&gt;]])
+sklair.emit(page:html())
+sklair.emit([[&lt;/article&gt;]])</code></pre>
+						</div>
+					</article>
 
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-10 font-secondary text-gray-700">
+					<article class="home-feature home-feature--documents">
+						<div class="home-feature__copy">
+							<h3>Generated documents</h3>
+							<p>Turn Markdown, data, or project sources into complete document trees through reusable
+								layouts.</p>
+						</div>
+						<div class="home-feature__visual home-output-tree" aria-hidden="true">
+							<div><i class="fa-regular fa-folder-open"></i><span>build</span></div>
+							<div><i class="fa-regular fa-file-code"></i><span>index.html</span></div>
+							<div><i class="fa-regular fa-folder-open"></i><span>docs</span></div>
+							<div><i class="fa-regular fa-file-code"></i><span>getting-started/index.html</span></div>
+							<div><i class="fa-regular fa-file-code"></i><span>components/index.html</span></div>
+							<div><i class="fa-regular fa-file-code"></i><span>lua/index.html</span></div>
+						</div>
+					</article>
 
-                <div>
-                    <h3 class="text-xl font-semibold mb-3">Compile-time components</h3>
-                    <p>
-                        Define reusable HTML components that expand deterministically at build time.
-                        No runtime cost, no client-side abstraction - just clean output.
-                    </p>
-                </div>
+					<article class="home-feature home-feature--material home-feature--speed">
+						<div class="home-feature__copy">
+							<h3>Ridiculous compilation speed</h3>
+							<p>A small binary does the work once, then writes direct, deterministic output.</p>
+						</div>
+						<div class="home-feature__visual home-feature__visual--terminal" aria-hidden="true">
+							<code><span>[INFO]</span> Compilation of 83 documents&nbsp;&nbsp; 129.006 ms
+<span>[INFO]</span> Static copy of 40 files&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 11.722 ms
+<span>[INFO]</span> Time since start&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 235.909 ms</code>
+						</div>
+					</article>
+				</div>
+			</div>
+		</section>
 
-                <div>
-                    <h3 class="text-xl font-semibold mb-3">Compiler directives</h3>
-                    <p>
-                        Guide compilation with explicit directives:
-                        ordering barriers, removal blocks, and classification hints
-                        that give you control without sacrificing automation.
+		<section class="home-closing sklair-section">
+			<div class="sklair-container">
+				<h2>HTML deserved better.</h2>
+				<p>
+					Keep the expressive source. Move the machinery to compile time. Ship the document.
+				</p>
+				<div class="home-actions">
+					<a class="sklair-button" href="/download/">Download Sklair</a>
+					<a class="sklair-button sklair-button--quiet" href="https://github.com/numelon-oss/sklair"
+						target="_blank" rel="noreferrer">View the source</a>
+				</div>
+			</div>
+		</section>
+	</main>
 
-                        Directives are explicit, readable, and intentionally limited - Sklair avoids implicit magic.
-                    </p>
-                </div>
-
-                <div>
-                    <h3 class="text-xl font-semibold mb-3">Polyglot HTML</h3>
-                    <p>
-                        Specific directives such as <code>sklair:remove</code> can be used to write HTML that works both
-                        as raw HTML and as Sklair input.
-                        Useful for previews, isolated component development, and editor tooling.
-                    </p>
-                </div>
-
-                <div>
-                    <h3 class="text-xl font-semibold mb-3">Deterministic optimisation</h3>
-                    <p>
-                        Sklair performs predictable, explainable optimisations -
-                        especially in <code>&lt;head&gt;</code> ordering and deduplication -
-                        without hidden heuristics.
-                    </p>
-                </div>
-
-            </div>
-        </div>
-    </section>
-
-    <section class="w-full bg-background text-black px-6 py-20">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">
-                Build-time hooks, safely
-            </h2>
-
-            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
-                Sklair supports <strong>pre-</strong> and <strong>post-build hooks</strong>
-                written in sandboxed Lua.
-                <br><br>
-                Hooks are ideal for data preparation, asset transformation,
-                and generating build-time artefacts - without introducing runtime complexity.
-            </p>
-        </div>
-
-        <div class="max-w-5xl mx-auto mt-12 grid grid-cols-1 md:grid-cols-3 gap-8 text-gray-700 font-secondary">
-
-            <div>
-                <h3 class="font-semibold mb-2">Sandboxed by design</h3>
-                <p>
-                    Hooks run in a restricted environment with a controlled filesystem API -
-                    no unrestricted OS access.
-                </p>
-            </div>
-
-            <div>
-                <h3 class="font-semibold mb-2">Deterministic execution</h3>
-                <p>
-                    Hooks run sequentially, without background tasks or concurrency.
-                    Builds remain predictable and reproducible.
-                </p>
-            </div>
-
-            <div>
-                <h3 class="font-semibold mb-2">Data-first workflows</h3>
-                <p>
-                    Perfect for compiling structured data into optimised assets
-                    that your site can consume directly.
-                </p>
-            </div>
-
-        </div>
-    </section>
-
-    <section class="w-full bg-alternative text-black px-6 py-20">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">
-                Works with SPAs, too
-            </h2>
-
-            <p class="text-base sm:text-lg font-secondary text-gray-700 leading-relaxed">
-                Sklair does not inherently impose an application model.
-                <br><br>
-                Whether you're building a static site, a hybrid app, or a fully client-driven SPA,
-                Sklair prepares your HTML, data, and assets -
-                how you use JavaScript on top is entirely up to you.
-            </p>
-
-            <!-- TODO: future -->
-            <!-- <p class="mt-4 text-sm text-gray-600">
-                Learn more about SPAs with Sklair in the documentation.
-            </p> -->
-        </div>
-    </section>
-
-    <section class="w-full bg-background text-black px-6 py-20">
-        <div class="max-w-4xl mx-auto text-center">
-            <h2 class="text-3xl sm:text-4xl font-main mb-6">
-                Where Sklair is going
-            </h2>
-
-            <ul class="font-secondary text-gray-700 space-y-3">
-                <li>Directive system expansion (conditional compilation, data-driven builds)</li>
-                <li>Nested components with circular dependency detection</li>
-                <li>Dynamic resource hints (<code>preconnect</code>, <code>dns-prefetch</code>)</li>
-                <li>Full Lua block support inside documents</li>
-                <li>Package manager distribution (brew, winget, apt)</li>
-            </ul>
-        </div>
-    </section>
-
-    <TrySklairCTA></TrySklairCTA>
-
-    <HowItWorksSection></HowItWorksSection>
-
-    <TrySklairCTA></TrySklairCTA>
-
-    <CustomFooter></CustomFooter>
+	<SiteFooter></SiteFooter>
 </body>
 
 </html>

@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title sklair-text="browsertitle"></title>
+	<link rel="canonical" sklair-attr-href="canonical">
+	<link rel="alternate" type="text/markdown" title="Markdown source" sklair-attr-href="rawurl">
+	<link href="/styles/documentation.css" rel="stylesheet">
+
+	<SiteHead></SiteHead>
+	<Analytics></Analytics>
+	<OpenGraph site_name="Sklair" image="https://sklair.numelon.com/img/opengraph.jpg" sklair-attr-title="browsertitle"
+		sklair-attr-description="description" sklair-attr-url="canonical"></OpenGraph>
+</head>
+
+<body>
+	<SiteHeader search></SiteHeader>
+	<DocumentationSearch></DocumentationSearch>
+    <DocumentationCode></DocumentationCode>
+    <DocumentationNavigation></DocumentationNavigation>
+    <DocumentationDefinitions></DocumentationDefinitions>
+    <DocumentationContents></DocumentationContents>
+
+	<main id="main" class="documentation-shell" sklair-attr-data-document-title="title"
+		sklair-attr-data-document-path="currentpath">
+		<aside class="documentation-shell__navigation">
+			<nav aria-label="Documentation navigation">
+				<a class="documentation-shell__home active" href="/docs/" aria-current="page"
+					sklair-if="docshome">Documentation</a>
+				<a class="documentation-shell__home" href="/docs/" sklair-if="docschild">Documentation</a>
+				<div class="documentation-tree">
+					<script type="application/x-sklair-lua">
+                    local function emit_navigation(items, depth)
+                        for _, item in ipairs(items) do
+                            sklair.component("DocumentationNavItem", {
+                                title = item.title,
+                                url = item.url,
+                                current = item.current,
+                                inactive = not item.current,
+                                depth = depth,
+                            })
+                            emit_navigation(item.children, depth + 1)
+                        end
+                    end
+
+                    emit_navigation(props.navigation, 0)
+                </script>
+				</div>
+			</nav>
+		</aside>
+
+		<div class="documentation-shell__document">
+			<details class="documentation-mobile-navigation">
+				<summary>
+					<span><i class="fa-solid fa-folder-tree" aria-hidden="true"></i> Browse documentation</span>
+					<i class="fa-solid fa-plus documentation-disclosure-closed" aria-hidden="true"></i>
+					<i class="fa-solid fa-minus documentation-disclosure-open" aria-hidden="true"></i>
+				</summary>
+				<nav aria-label="Mobile documentation navigation">
+					<a class="documentation-shell__home active" href="/docs/" aria-current="page"
+						sklair-if="docshome">Documentation</a>
+					<a class="documentation-shell__home" href="/docs/" sklair-if="docschild">Documentation</a>
+					<div class="documentation-tree">
+						<script type="application/x-sklair-lua">
+                            local function emit_navigation(items, depth)
+                                for _, item in ipairs(items) do
+                                    sklair.component("DocumentationNavItem", {
+                                        title = item.title,
+                                        url = item.url,
+                                        current = item.current,
+                                        inactive = not item.current,
+                                        depth = depth,
+                                    })
+                                    emit_navigation(item.children, depth + 1)
+                                end
+                            end
+
+                            emit_navigation(props.navigation, 0)
+                        </script>
+					</div>
+				</nav>
+			</details>
+
+			<nav class="documentation-document-tools" aria-label="Document source">
+				<a target="_blank" rel="noreferrer" sklair-attr-href="editurl">
+					<i class="fa-solid fa-pen" aria-hidden="true"></i>
+					Edit this page
+				</a>
+				<a target="_blank" rel="noreferrer" sklair-attr-href="rawurl">
+					<i class="fa-brands fa-markdown" aria-hidden="true"></i>
+					Markdown source
+				</a>
+			</nav>
+
+			<nav class="documentation-breadcrumbs" aria-label="Breadcrumb">
+				<ol>
+					<script type="application/x-sklair-lua">
+                    for _, item in ipairs(props.breadcrumbs) do
+                        sklair.component("DocumentationBreadcrumb", {
+                            title = item.title,
+                            url = item.url,
+                            current = item.current,
+                            inactive = not item.current,
+                        })
+                    end
+                </script>
+				</ol>
+			</nav>
+
+			<details class="documentation-mobile-contents" sklair-if="hasheadings">
+				<summary>
+					<span>On this page</span>
+					<i class="fa-solid fa-plus documentation-disclosure-closed" aria-hidden="true"></i>
+					<i class="fa-solid fa-minus documentation-disclosure-open" aria-hidden="true"></i>
+				</summary>
+				<nav aria-label="On this page">
+					<script type="application/x-sklair-lua">
+                        for _, heading in ipairs(props.headings) do
+                            sklair.component("DocumentationHeading", {
+                                title = heading.title,
+                                url = heading.url,
+                                level = heading.level,
+                            })
+                        end
+                    </script>
+				</nav>
+			</details>
+
+			<article class="documentation-article">
+				<slot></slot>
+			</article>
+
+			<nav class="documentation-neighbours" aria-label="Adjacent documentation pages">
+				<script type="application/x-sklair-lua">
+                    if props.previous ~= nil then
+                        sklair.component("DocumentationNeighbour", {
+                            direction = "Previous",
+                            title = props.previous.title,
+                            url = props.previous.url,
+                            relation = "prev",
+                            previous = true,
+                            next = false,
+                        })
+                    end
+                    if props.next ~= nil then
+                        sklair.component("DocumentationNeighbour", {
+                            direction = "Next",
+                            title = props.next.title,
+                            url = props.next.url,
+                            relation = "next",
+                            previous = false,
+                            next = true,
+                        })
+                    end
+                </script>
+			</nav>
+		</div>
+
+		<aside class="documentation-shell__contents" aria-label="On this page" sklair-if="hasheadings">
+			<h2>On this page</h2>
+			<nav>
+				<script type="application/x-sklair-lua">
+                    for _, heading in ipairs(props.headings) do
+                        sklair.component("DocumentationHeading", {
+                            title = heading.title,
+                            url = heading.url,
+                            level = heading.level,
+                        })
+                    end
+                </script>
+			</nav>
+		</aside>
+	</main>
+
+	<SiteFooter></SiteFooter>
+</body>
+
+</html>

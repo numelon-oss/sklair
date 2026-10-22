@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="theme-color" content="#fff9f4">
+    <script>
+        (() => {
+            const root = document.documentElement;
+            const allowedPreferences = new Set(["system", "light", "dark"]);
+            let preference = "system";
+
+            try {
+                const storedPreference = localStorage.getItem("sklair-theme");
+                if (allowedPreferences.has(storedPreference)) preference = storedPreference;
+            } catch (_) { }
+
+            const systemTheme = matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+            const theme = preference === "system" ? systemTheme : preference;
+
+            root.dataset.themePreference = preference;
+            root.dataset.theme = theme;
+            root.style.colorScheme = theme;
+
+            const themeColour = document.querySelector('meta[name="theme-color"]');
+            if (themeColour) themeColour.content = theme === "dark" ? "#17110f" : "#fff9f4";
+        })();
+    </script>
+    <script type="module" src="./theme.mjs"></script>
+</head>
+
+<body></body>
+
+</html>

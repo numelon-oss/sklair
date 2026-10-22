@@ -1,0 +1,60 @@
+name: Website
+
+on:
+    push:
+        branches:
+            - main
+    workflow_dispatch:
+
+permissions:
+    contents: read
+    pages: read
+
+concurrency:
+    group: github-pages
+    cancel-in-progress: false
+
+jobs:
+    build:
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Setup Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version-file: go.mod
+
+            - name: Configure GitHub Pages
+              uses: actions/configure-pages@v5
+
+            - name: Generate configuration schema
+              run: |
+                  mkdir -p src/schema
+                  go run -mod=readonly ./tools/schema > src/schema/sklair.schema.json
+
+            - name: Build website with Sklair
+              run: go run -mod=readonly . build
+
+            - name: Upload Pages artefact
+              uses: actions/upload-pages-artifact@v4
+              with:
+                  path: src/build
+
+    deploy:
+        if: github.ref == 'refs/heads/main'
+        needs: build
+        runs-on: ubuntu-latest
+        permissions:
+            pages: write
+            id-token: write
+        environment:
+            name: github-pages
+            url: ${{ steps.deployment.outputs.page_url }}
+
+        steps:
+            - name: Deploy to GitHub Pages
+              id: deployment
+              uses: actions/deploy-pages@v4

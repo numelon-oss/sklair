@@ -1,0 +1,27 @@
+.documentation-definition-link {
+    text-decoration-style: dotted;
+    text-decoration-thickness: 1px;
+}
+
+.documentation-definition {
+    position: fixed;
+    z-index: 70;
+    display: grid;
+    width: min(24rem, calc(100vw - 1.5rem));
+    gap: 0.3rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--sklair-rule-strong);
+    background: var(--sklair-colour-main);
+    color: var(--sklair-colour-muted);
+    font-size: 0.78rem;
+    line-height: 1.5;
+}
+
+.documentation-definition[hidden] {
+    display: none;
+}
+
+.documentation-definition strong {
+    color: var(--sklair-colour-ink);
+    font-size: 0.8rem;
+}

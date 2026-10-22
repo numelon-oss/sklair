@@ -1,0 +1,67 @@
+.foundation-hero {
+  display: grid;
+  min-height: 78vh;
+  align-items: end;
+  padding-block: clamp(6rem, 13vw, 10rem) 4rem;
+}
+
+.foundation-hero__mark {
+  width: clamp(3rem, 7vw, 5rem);
+  margin-bottom: 2rem;
+}
+
+.foundation-intro {
+  max-width: 42rem;
+  margin-bottom: 2rem;
+}
+
+.foundation-actions,
+.foundation-grid,
+.foundation-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.8rem;
+}
+
+.foundation-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.foundation-card h3 {
+  margin-bottom: 0.7rem;
+  font-size: 1.25rem;
+}
+
+.foundation-card p:last-child {
+  margin-bottom: 0;
+  color: var(--sklair-colour-muted);
+}
+
+.foundation-swatch {
+  min-height: 8rem;
+  padding: 1rem;
+  border: 1px solid var(--sklair-rule);
+  background: var(--swatch);
+  color: var(--swatch-ink, var(--sklair-colour-ink));
+  font-size: 0.8rem;
+  font-weight: 800;
+}
+
+.foundation-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.foundation-note {
+  padding-left: 1rem;
+  border-left: 0.2rem solid var(--sklair-colour-accent);
+  color: var(--sklair-colour-muted);
+}
+
+@media (max-width: 44rem) {
+  .foundation-grid {
+    grid-template-columns: 1fr;
+  }
+}

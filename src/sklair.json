@@ -6,8 +6,17 @@
 
 	"input": "./",
 	"components": "./components",
+	"layouts": "./layouts",
 
-	"exclude": [".*", "!.htaccess", "*.md", "*.psd"],
+	"exclude": [
+		".*",
+		"!.htaccess",
+		"*.md",
+		"*.psd",
+		"/schema",
+		"/docs/navigation.json",
+		"/docs/config.json"
+	],
 	"exclude_compile": ["someBigFile.html"],
 
 	"output": "./build",
@@ -18,7 +27,9 @@
 	},
 
 	"preventFOUC": {
-		"enabled": true,
+		"enabled": false,
 		"colour": "#24100a"
-	}
+	},
+
+	"templates": ["DocumentationSearchResult"]
 }
