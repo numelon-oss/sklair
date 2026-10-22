@@ -161,3 +161,22 @@ jobs:
           fail_on_unmatched_files: true
           files: dist/*
           body_path: ${{ needs.prepare.outputs.tag }}-RELEASE.md
+
+  distribute:
+    if: github.event_name == 'push' && needs.prepare.outputs.prerelease == 'false'
+    needs: [prepare, publish]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Notify Numelon distribution repository
+        env:
+          GH_TOKEN: ${{ secrets.DISTRIBUTION_TOKEN }}
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          if [[ -z "$GH_TOKEN" ]]; then
+            echo 'Set DISTRIBUTION_TOKEN in this repository to notify homebrew-distribution.' >&2
+            echo 'The GitHub release is already published; distribution can be run manually once configured.' >&2
+            exit 1
+          fi
+          jq -n --arg tag "$RELEASE_TAG" \
+            '{event_type: "release-published", client_payload: {package: "sklair", tag: $tag}}' |
+            gh api --method POST repos/numelon-oss/homebrew-distribution/dispatches --input -
