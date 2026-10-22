@@ -1,11 +1,11 @@
-package commands
+package cli
 
 import (
 	"bufio"
+	"context"
 	"encoding/json"
 	"fmt"
 	"os"
-	"sklair/commandRegistry"
 	"sklair/sklairConfig"
 	"strings"
 
@@ -30,9 +30,7 @@ func askBool(prompt string, fallback bool) bool {
 		defaultStr = "yes"
 	}
 
-	fmt.Printf("%s (default: %s): ", prompt, defaultStr)
-	var input string
-	_, _ = fmt.Scanln(&input)
+	input := askString(prompt, defaultStr)
 
 	switch strings.ToLower(input) {
 	case "y", "yes", "true":
@@ -89,11 +87,13 @@ func configurationSummary(cfg sklairConfig.ProjectConfig) {
 	fmt.Println(logger.Reset)
 }
 
-func init() {
-	commandRegistry.Registry.Register(&commandRegistry.Command{
+func initCommand() *Command {
+	return &Command{
 		Name:        "init",
 		Description: "Initialises a Sklair project in the current directory",
-		Run: func(args []string) int {
+		Examples:    []string{"sklair init"},
+		Configure: noArguments("init", func(_ context.Context) error {
+			reader = bufio.NewReader(os.Stdin)
 			fmt.Println(logger.Cyan + "Welcome to Sklair! 🪶 Let's get you set up." + logger.Reset)
 			fmt.Println(logger.Green + "This will guide you through creating a sklair.json configuration file for your Sklair project.")
 			fmt.Println("Press Enter to accept the default, which is shown in brackets." + logger.Reset)
@@ -102,6 +102,12 @@ func init() {
 
 			// TODO: add --yes flag which automatically saves default sklair config
 			cfg := sklairConfig.DefaultConfig
+			hooks := *cfg.Hooks
+			obfuscate := *cfg.ObfuscateJS
+			preventFOUC := *cfg.PreventFOUC
+			cfg.Hooks = &hooks
+			cfg.ObfuscateJS = &obfuscate
+			cfg.PreventFOUC = &preventFOUC
 
 			cfg.Hooks.Enabled = askBool("Do you want to use pre/post-compile Lua hooks?", cfg.Hooks.Enabled)
 			if cfg.Hooks.Enabled {
@@ -144,23 +150,21 @@ func init() {
 
 			if !askBool("Write sklair.json with this configuration?", true) {
 				fmt.Println("Aborted. No files were written.")
-				return 0
+				return nil
 			}
 
 			// write file
 			data, err := json.MarshalIndent(cfg, "", "  ")
 			if err != nil {
-				fmt.Println("Failed to serialise configuration:", err)
-				return 1
+				return fmt.Errorf("could not serialise configuration: %w", err)
 			}
 
 			if err := os.WriteFile("sklair.json", data, 0644); err != nil {
-				fmt.Println("Failed to write sklair.json:", err)
-				return 1
+				return fmt.Errorf("could not write sklair.json: %w", err)
 			}
 
 			fmt.Println("Created sklair.json")
-			return 0
-		},
-	})
+			return nil
+		}),
+	}
 }

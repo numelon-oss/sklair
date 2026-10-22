@@ -23,19 +23,27 @@ Use `--port` to request a port and `--host` to change the listening address:
 sklair serve --host 0.0.0.0 --port 1234
 ```
 
-| Flag                    | Default            | Purpose                                            |
-| ----------------------- | ------------------ | -------------------------------------------------- |
-| `#!bash --host`         | `#!text localhost` | Address on which the server listens.               |
-| `#!bash --port`         | `#!text 0`         | Requested port. Zero chooses an available port.    |
-| `#!bash --auto-refresh` | `#!text true`      | Refresh connected pages after successful rebuilds. |
+!!! warning "Rebuild failures"
+
+    Do note that binding to `0.0.0.0` in this particular example listens on all IPv4 interfaces, allowing other devices on your local network to connect using your computer's LAN address. That is useful for testing on another device like a phone, but you should still keep this in mind.
+
+    The default host however, as stated below, is `localhost`.
+
+| Flag                    | Default            | Purpose                                                                    |
+| ----------------------- | ------------------ | -------------------------------------------------------------------------- |
+| `#!bash --host`         | `#!text localhost` | Address on which the server listens.                                       |
+| `#!bash --port`         | `#!text 0`         | Requested port. Zero chooses an available port.                            |
+| `#!bash --auto-refresh` | `#!text true`      | Refresh connected pages after successful rebuilds.                         |
+| `#!bash --open`         | `#!text false`     | Open the preview in your default browser after the first successful build. |
+| `#!bash --watch`        | `#!text true`      | Watch project files and rebuild when they change.                          |
 
 Boolean values use Sklair's ordinary flag syntax:
 
-```bash
+```bash title="Serving without automatic refresh"
 sklair serve --auto-refresh=false
 ```
 
-<!-- TODO: -open and -watch -->
+Use `--watch=false` to serve a single build without watching files. `--auto-refresh=false` keeps rebuilding while leaving connected pages alone. Press Ctrl+C to stop the server and remove its temporary output.
 
 !!! warning "Rebuild failures"
 

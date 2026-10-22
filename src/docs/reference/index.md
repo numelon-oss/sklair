@@ -11,6 +11,7 @@ This section describes Sklair as it exists, including the slightly awkward edges
 
 - [Command-line interface](./cli.md) covers every command and global logging flag.
 - [Project configuration](./project-configuration.md) lists every `sklair.json` field, its default, and whether it currently has an effect.
+- [OpenGraph component](./opengraph.md) generates page descriptions and social-sharing metadata without a component file.
 - [Compiler directives](../compiler-directives/index.md) defines the comment syntax for head ordering and source removal.
 
 ## Lua libraries

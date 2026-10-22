@@ -1,6 +1,7 @@
 package devserver
 
 import (
+	"context"
 	"io/fs"
 	"os"
 	"path/filepath"
@@ -9,7 +10,7 @@ import (
 	"github.com/fsnotify/fsnotify"
 )
 
-func debounce(in <-chan bool, delay time.Duration) <-chan bool {
+func debounce(ctx context.Context, in <-chan bool, delay time.Duration) <-chan bool {
 	out := make(chan bool)
 
 	go func() {
@@ -19,6 +20,11 @@ func debounce(in <-chan bool, delay time.Duration) <-chan bool {
 			timer   *time.Timer
 			pending bool
 		)
+		defer func() {
+			if timer != nil {
+				timer.Stop()
+			}
+		}()
 
 		for {
 			var timerC <-chan time.Time
@@ -27,6 +33,8 @@ func debounce(in <-chan bool, delay time.Duration) <-chan bool {
 			}
 
 			select {
+			case <-ctx.Done():
+				return
 			case _, ok := <-in:
 				if !ok {
 					return
@@ -38,14 +46,21 @@ func debounce(in <-chan bool, delay time.Duration) <-chan bool {
 					timer = time.NewTimer(delay)
 				} else {
 					if !timer.Stop() {
-						<-timer.C
+						select {
+						case <-timer.C:
+						default:
+						}
 					}
 					timer.Reset(delay)
 				}
 
 			case <-timerC:
 				if pending {
-					out <- true
+					select {
+					case out <- true:
+					case <-ctx.Done():
+						return
+					}
 					pending = false
 				}
 				timer = nil
@@ -72,8 +87,8 @@ func shouldWatch(path string) bool {
 // from all tracked directories, output dir must be excluded along with common excluded directories
 
 // TODO: paths should eventually be derived from resolved build inputs and excludes
-// also refer to commands/serve.go for more information
-func Watch(paths ...string) (<-chan bool, <-chan error) {
+// also refer to cli/serve.go for more information
+func Watch(ctx context.Context, paths ...string) (<-chan bool, <-chan error) {
 	events := make(chan bool)
 	errs := make(chan error)
 
@@ -83,7 +98,10 @@ func Watch(paths ...string) (<-chan bool, <-chan error) {
 
 		watcher, err := fsnotify.NewWatcher()
 		if err != nil {
-			errs <- err
+			select {
+			case errs <- err:
+			case <-ctx.Done():
+			}
 			return
 		}
 		defer watcher.Close()
@@ -105,12 +123,18 @@ func Watch(paths ...string) (<-chan bool, <-chan error) {
 				return nil
 			})
 			if err != nil {
-				errs <- err
+				select {
+				case errs <- err:
+				case <-ctx.Done():
+				}
+				return
 			}
 		}
 
 		for {
 			select {
+			case <-ctx.Done():
+				return
 			case e, ok := <-watcher.Events:
 				if !ok {
 					return
@@ -125,17 +149,25 @@ func Watch(paths ...string) (<-chan bool, <-chan error) {
 
 				// we only want writes, creates and deletes
 				if e.Op&(fsnotify.Write|fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
-					events <- true
+					select {
+					case events <- true:
+					case <-ctx.Done():
+						return
+					}
 				}
 			case err, ok := <-watcher.Errors:
 				if !ok {
 					return
 				}
 
-				errs <- err
+				select {
+				case errs <- err:
+				case <-ctx.Done():
+					return
+				}
 			}
 		}
 	}()
 
-	return debounce(events, 150*time.Millisecond), errs
+	return debounce(ctx, events, 150*time.Millisecond), errs
 }

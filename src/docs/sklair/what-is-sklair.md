@@ -5,7 +5,8 @@
 
 # What is Sklair?
 
-Sklair is a HTML compiler. You write HTML documents and reusable components; Sklair combines them during a build and writes a static website.
+Sklair is a HTML compiler. More specifically, it is an ahead-of-time, source-to-source compiler for a HTML-based authoring language, with embedded Lua evaluation and a document generation pipeline.
+You write HTML documents and reusable components; Sklair combines them during a build and writes a static website.
 
 Components can have props, conditional content, bodies, styles, scripts, and head contributions. Component tags, bindings, slots, and compile-time Lua disappear from the result, leaving the HTML they produced.
 

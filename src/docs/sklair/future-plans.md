@@ -11,10 +11,7 @@ Sklair is currently distributed as standalone binaries through GitHub Releases. 
 
 Those package channels will remain wrappers around the same self-contained binary.
 
-## Update awareness
-
-Package managers should own upgrades when they installed Sklair. The compiler may still report that a newer release exists, while leaving the actual update operation to the installation method that owns the binary.
-
 ## Documentation tooling
 
-The documentation site will continue to serve readable HTML alongside direct links to its Markdown sources. More structured discovery for tools and agents or something later if needed.
+- Making Sklair documentation sites easier to reuse is possibly coming in 0.5.0
+- Also for the sklair documentation site specifically: more structured discovery tools for things like agents/AI or something, but this could also go in SklairDoc templates too
