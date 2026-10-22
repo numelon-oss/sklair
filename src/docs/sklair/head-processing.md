@@ -41,7 +41,7 @@ Segments are ordered as follows:
 | 10 | Other elements, including ordinary inline `style` elements |
 | 11 | Sklair's generator metadata |
 
-Elements with the same priority retain their order after component resolution. Non-resource `link` elements are classified in the stylesheet group even when their `rel` is not `stylesheet`. Inline `style` elements are not automatically put in that group; use a barrier with `treat-as=stylesheet` when they need to stay beside stylesheet links.
+Order within a priority group is not guaranteed. Use an ordering barrier when several elements must keep their order. Non-resource `link` elements are classified in the stylesheet group even when their `rel` is not `stylesheet`. Inline `style` elements are not automatically put in that group; use a barrier with `treat-as=stylesheet` when they need to stay beside stylesheet links.
 
 Sklair orders resource hints you supply. It does not generate preload or preconnect links automatically.
 

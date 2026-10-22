@@ -8,4 +8,4 @@
 
 A runtime template is compiled into a native `<template>` registry. Browser JavaScript clones it through Sklair's runtime module and supplies values or an optional body.
 
-See [Runtime templates](/docs/components/runtime-templates/).
+See [Runtime templates](../components/runtime-templates.md).

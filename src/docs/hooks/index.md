@@ -5,7 +5,7 @@
 
 # Build hooks
 
-Hooks let a project orchestrate work around Sklair's compiler without moving the compiler itself into Lua. It is different from [inline Lua](../lua/inline-syntax.md), which is for logic inside component instances.
+Hooks let a project orchestrate work around Sklair's compiler without moving the compiler itself into Lua. It is different from [inline Lua](../lua/inline-lua.md), which is for logic inside component instances.
 
 [Pre-build hooks](./pre.md) prepare inputs, generated assets, and generated-document requests. [Post-build hooks](./post.md) inspect or adjust completed output.
 

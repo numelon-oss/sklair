@@ -19,12 +19,12 @@ Inline Lua runs while HTML is being built, emits ordinary nodes, and disappears 
 
 Use it when HTML structure genuinely depends on data or computation: generating a navigation tree, rendering a Markdown-derived table of contents, or adapting one component to structured input. Props and bindings should handle the simple cases. Lua handles the cases where pretending HTML is an expression language would be worse.
 
-Sklair has two execution modes:
+Inline Lua has two execution modes:
 
 - dynamic Lua runs for each document, component, or layout instance;
 - static Lua runs once while a used definition is prepared, and its unresolved output is reused (effectively cached).
 
-See [Inline syntax](./inline-syntax.md), [Static Lua](./static-lua.md), [Dynamic Lua](./dynamic-lua.md), and [Emitting markup](./emitting-markup.md) for usage.
+See [Inline Lua](./inline-lua.md) for the syntax and static/dynamic execution modes, and [Emitting markup](./emitting-markup.md) for the output functions.
 
 ## Shared environment and libraries
 

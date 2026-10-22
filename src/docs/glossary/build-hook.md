@@ -8,4 +8,4 @@
 
 A build hook is a Lua file run by Sklair. Pre-build hooks can read project data and create generated inputs; post-build hooks can inspect or modify the completed output.
 
-See [Build hooks](/docs/hooks/).
+See [Build hooks](../hooks/index.md).

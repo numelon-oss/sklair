@@ -8,4 +8,4 @@
 
 A prop is normally written as an attribute on a component tag. Bindings and dynamic Lua read the value while Sklair compiles that component use.
 
-See [Component props and bindings](/docs/components/props-and-bindings/).
+See [Component props and bindings](../components/props-and-bindings.md).

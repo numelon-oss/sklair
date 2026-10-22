@@ -8,4 +8,4 @@
 
 A default `<slot></slot>` marks where Sklair inserts the child content written inside a component use. Layouts use the same marker for a generated document body.
 
-See [Component bodies and slots](/docs/components/bodies-and-slots/).
+See [Component bodies and slots](../components/bodies-and-slots.md).

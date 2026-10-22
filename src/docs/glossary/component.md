@@ -8,4 +8,4 @@
 
 A component is an HTML file—or a folder containing `index.html` and its assets—inside the configured components directory. Sklair replaces matching custom tags with that HTML during compilation.
 
-See [Components](/docs/components/).
+See [Components](../components/index.md).

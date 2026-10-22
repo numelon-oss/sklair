@@ -8,4 +8,4 @@
 
 Static Lua is calculated once when Sklair first needs a component, layout, or source document. Every later use receives the same prepared result, so static Lua cannot depend on per-use props.
 
-See [Static Lua](/docs/lua/static-lua/).
+See [Static Lua](../lua/inline-lua.md#static-lua).

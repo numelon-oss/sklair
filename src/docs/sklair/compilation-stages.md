@@ -34,7 +34,7 @@ Every use copies the prepared definition to make an instance with its own props 
 <Badge label="Experimental"></Badge>
 ```
 
-Static Lua runs once per used definition per build. Dynamic Lua runs for each instance. See [Static Lua](../lua/static-lua.md) and [Dynamic Lua](../lua/dynamic-lua.md) for their scopes and available values.
+Static Lua runs once per used definition per build. Dynamic Lua runs for each instance. See [Inline Lua](../lua/inline-lua.md) for both modes and their available values.
 
 ## 5. Instantiation and resolution
 

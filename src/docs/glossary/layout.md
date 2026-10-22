@@ -8,4 +8,4 @@
 
 A layout is a complete HTML document with one body slot. Generated content fills that slot, while the layout supplies the document head, surrounding body structure, and shared props.
 
-See [Full-document layouts](/docs/document-generation/layouts/).
+See [Full-document layouts](../document-generation/layouts.md).

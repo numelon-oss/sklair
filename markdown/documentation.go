@@ -195,11 +195,30 @@ func normaliseHighlightedLines(value string) (string, error) {
 }
 
 var admonitionStart = regexp.MustCompile(`^!!![ \t]+([a-zA-Z][a-zA-Z0-9-]*)(?:[ \t]+"([^"]*)")?[ \t]*$`)
+var markdownFence = regexp.MustCompile("^ {0,3}(`{3,}|~{3,})(.*)$")
+
+const admonitionEnd = "<!-- sklair-admonition-end -->"
 
 func preprocessAdmonitions(source string) string {
 	lines := strings.Split(strings.ReplaceAll(source, "\r\n", "\n"), "\n")
 	output := make([]string, 0, len(lines))
+	var fenceCharacter byte
+	var fenceLength int
 	for index := 0; index < len(lines); index++ {
+		fence := markdownFence.FindStringSubmatch(lines[index])
+		if fenceCharacter != 0 {
+			output = append(output, lines[index])
+			if fence != nil && fence[1][0] == fenceCharacter && len(fence[1]) >= fenceLength && strings.TrimSpace(fence[2]) == "" {
+				fenceCharacter = 0
+			}
+			continue
+		}
+		if fence != nil && (fence[1][0] != '`' || !strings.Contains(fence[2], "`")) {
+			fenceCharacter = fence[1][0]
+			fenceLength = len(fence[1])
+			output = append(output, lines[index])
+			continue
+		}
 		match := admonitionStart.FindStringSubmatch(lines[index])
 		if match == nil || index+1 >= len(lines) {
 			output = append(output, lines[index])
@@ -237,6 +256,7 @@ func preprocessAdmonitions(source string) string {
 		}
 		index--
 	admonitionComplete:
+		output = append(output, "", admonitionEnd, "")
 	}
 	return strings.Join(output, "\n")
 }
@@ -244,9 +264,14 @@ func preprocessAdmonitions(source string) string {
 var admonitionMarker = regexp.MustCompile(`^\[!([a-zA-Z][a-zA-Z0-9-]*)\](?:[ \t]+(.*))?$`)
 
 func prepareAdmonitions(root ast.Node, source []byte) {
+	var separators []*ast.HTMLBlock
 	_ = ast.Walk(root, func(node ast.Node, entering bool) (ast.WalkStatus, error) {
 		if !entering {
 			return ast.WalkContinue, nil
+		}
+		if block, ok := node.(*ast.HTMLBlock); ok && strings.TrimSpace(string(block.Lines().Value(source))) == admonitionEnd {
+			separators = append(separators, block)
+			return ast.WalkSkipChildren, nil
 		}
 		blockquote, ok := node.(*ast.Blockquote)
 		if !ok {
@@ -265,6 +290,9 @@ func prepareAdmonitions(root ast.Node, source []byte) {
 		blockquote.RemoveChild(blockquote, first)
 		return ast.WalkContinue, nil
 	})
+	for _, separator := range separators {
+		separator.Parent().RemoveChild(separator.Parent(), separator)
+	}
 }
 
 func renderDocumentationBlockquote(writer util.BufWriter, _ []byte, node ast.Node, entering bool) (ast.WalkStatus, error) {

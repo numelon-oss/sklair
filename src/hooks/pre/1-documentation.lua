@@ -207,7 +207,7 @@ local function apply_directory_order(entries, path)
 
 	local ordered = {}
 	local promoted = {}
-	for _, key in ipairs(configuration.order) do
+	local function configured_entry(key)
 		local entry = by_key[key]
 		if entry == nil then
 			fail(navigation_source .. ': ordered entry "' .. key .. '" is missing from ' .. path)
@@ -216,12 +216,22 @@ local function apply_directory_order(entries, path)
 			fail(navigation_source .. ': ordered entry "' .. key .. '" is duplicated')
 		end
 		promoted[key] = true
-		ordered[#ordered + 1] = entry
+		return entry
+	end
+	for _, key in ipairs(configuration.order) do
+		ordered[#ordered + 1] = configured_entry(key)
+	end
+	local last = {}
+	for _, key in ipairs(configuration.last or {}) do
+		last[#last + 1] = configured_entry(key)
 	end
 	for _, entry in ipairs(entries) do
 		if not promoted[entry.key] then
 			ordered[#ordered + 1] = entry
 		end
+	end
+	for _, entry in ipairs(last) do
+		ordered[#ordered + 1] = entry
 	end
 	return ordered, configuration.numbered == true
 end

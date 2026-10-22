@@ -9,11 +9,11 @@ Sklair is a HTML compiler. It gives ordinary HTML build-time components, explici
 
 ## Start somewhere useful
 
-If this is your first encounter with Sklair, follow [Getting started](/docs/getting-started/). It takes you from a downloaded binary to a small project with a real component and a development server.
+If this is your first encounter with Sklair, follow [Getting started](./getting-started/index.md). It takes you from a downloaded binary to a small project with a real component and a development server.
 
 Read [What is Sklair?](./sklair/what-is-sklair.md) for an introduction to its capabilities, or [Compilation stages](./sklair/compilation-stages.md) and [Head processing](./sklair/head-processing.md) for how a build works.
 
-Continue into [Components](/docs/components/), [Lua](/docs/lua/), [Build hooks](/docs/hooks/), [Compiler directives](/docs/compiler-directives/), and [Document generation](/docs/document-generation/) for their usage and APIs. This documentation site is an example of Sklair's powerful document generation.
+Continue into [Components](./components/index.md), [Lua](./lua/index.md), [Build hooks](./hooks/index.md), [Compiler directives](./compiler-directives/index.md), and [Document generation](./document-generation/index.md) for their usage and APIs. This documentation site is an example of Sklair's powerful document generation.
 
 ## What the compiler currently provides
 
@@ -27,4 +27,4 @@ Continue into [Components](/docs/components/), [Lua](/docs/lua/), [Build hooks](
 - An optional, deliberately tiny 3KB browser runtime for native templates.
 - Deterministic output planning, head ordering, deduplication, and collision errors.
 
-See also: [future work](./future-plans.md), which may or may not be added to Sklair.
+See also: [future work](./sklair/future-plans.md), which may or may not be added to Sklair.

@@ -8,4 +8,4 @@
 
 A component can add metadata, stylesheets, scripts, fonts, and other nodes to the final document `<head>`, even though the component itself is used in the body.
 
-See [Component head contributions](/docs/components/head-contributions/).
+See [Component head contributions](../components/head-contributions.md).

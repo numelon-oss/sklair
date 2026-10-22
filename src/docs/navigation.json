@@ -1,7 +1,8 @@
 {
   "directories": {
     ".": {
-      "order": ["getting-started", "sklair"]
+      "order": ["getting-started", "sklair"],
+      "last": ["glossary"]
     },
     "sklair": {
       "order": ["what-is-sklair", "compilation-stages", "head-processing"]

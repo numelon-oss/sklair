@@ -19,7 +19,7 @@ After compilation, that tag is gone. Its resolved body occupies the same positio
 
 A definition is parsed as a HTML document. Its `<head>` describes document-level dependencies and its `<body>` contains the markup which replaces an invocation. There is no second component language and no string interpolation syntax hidden between the tags.
 
-Use [props and bindings](/docs/components/props-and-bindings/) when an instance needs scalar variation. Use a [body and default slot](/docs/components/bodies-and-slots/) when the caller owns content inside the reusable shell. Use [compile-time Lua](/docs/lua/) when the decision is genuinely more involved than a binding.
+Use [props and bindings](./props-and-bindings.md) when an instance needs scalar variation. Use a [body and default slot](./bodies-and-slots.md) when the caller owns content inside the reusable shell. Use [compile-time Lua](../lua/index.md) when the decision is genuinely more involved than a binding.
 
 ## Composition
 
@@ -27,10 +27,10 @@ Definitions may invoke other components. Sklair resolves that graph recursively,
 
 ## Two physical forms
 
-A simple component is one HTML file. A component which owns CSS, modules, images, or fonts can become a [component folder](/docs/components/folders-and-assets/) with `index.html` as its entry point. Relative resource URLs are then rebased into the component's built namespace.
+A simple component is one HTML file. A component which owns CSS, modules, images, or fonts can become a [component folder](./folders-and-assets.md) with `index.html` as its entry point. Relative resource URLs are then rebased into the component's built namespace.
 
 ## Two execution modes
 
-Ordinary components compile immediately. Components listed in the root `templates` configuration become [runtime templates](/docs/components/runtime-templates/): their body is registered as native browser template content and cloned later through Sklair's small ES module.
+Ordinary components compile immediately. Components listed in the root `templates` configuration become [runtime templates](./runtime-templates.md): their body is registered as native browser template content and cloned later through Sklair's small ES module.
 
 The source syntax is shared, but the semantics are deliberately distinct. Runtime-template registration cannot receive compile-time props or a compile-time body, and runtime template definitions cannot contain compile-time Lua.

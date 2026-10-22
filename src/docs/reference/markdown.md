@@ -58,6 +58,22 @@ The type becomes a `documentation-admonition--<type>` class. This documentation 
 
 `note` uses the info styling and `danger` uses the critical styling. The whole box is tinted, with a stronger title background and matching border. Custom types are also accepted; generated sites can supply their own CSS.
 
+!!! info "Some information"
+
+    This is an example of the `info` type for admonitions. Use it for useful information.
+
+!!! tip "A useful shortcut"
+
+    This is an example of the `tip` type for admonitions. A nice tip could go here.
+
+!!! warning "An interesting warning"
+
+    This is a `warning`. Self explanatory, use it for warning people about something.
+
+!!! critical "Insanely critical"
+
+    This is an example of the `critical` admonition type. Use it for something very important that should be of attention.
+
 ## `#!lua document:to_html(options?)`
 
 Render the parsed document to a HTML fragment. By default, authored raw HTML is not passed through:

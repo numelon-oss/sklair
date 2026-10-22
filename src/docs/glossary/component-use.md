@@ -8,4 +8,4 @@
 
 A component use is a custom tag such as `<SiteHeader></SiteHeader>` in a source document or another component. It is sometimes called a component invocation in deeper compiler documentation.
 
-See [Defining components](/docs/components/defining-components/).
+See [Defining components](../components/defining-components.md).

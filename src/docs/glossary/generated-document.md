@@ -8,4 +8,4 @@
 
 A generated document is registered by a pre-build hook with `documents.render`. It combines a full-document layout, a body, props, and an output path.
 
-See [Document generation](/docs/document-generation/).
+See [Document generation](../document-generation/index.md).
