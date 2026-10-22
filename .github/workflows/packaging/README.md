@@ -12,7 +12,7 @@ Packaging for all the sklair releases.
 Use Go from `go.mod`, `tar`, and `zip`. Linux packaging also needs nFPM:
 
 ```sh
-go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+GOTOOLCHAIN=auto go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
 bash .github/workflows/packaging/package.sh 0.4.0 darwin arm64
 bash .github/workflows/packaging/package.sh 0.4.0 linux amd64
 ```

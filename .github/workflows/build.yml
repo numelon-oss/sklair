@@ -93,6 +93,8 @@ jobs:
           go-version-file: go.mod
       - name: Install Debian packaging tool
         if: matrix.os == 'linux'
+        env:
+          GOTOOLCHAIN: auto
         run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
       - name: Build and package
         env:
