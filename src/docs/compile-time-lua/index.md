@@ -20,4 +20,6 @@ Sklair has two execution modes:
 - dynamic Lua runs for each document, component, or layout instance;
 - static Lua runs once while a used definition is prepared, and its unresolved output is reused (effectively cached).
 
-Every block executes in an isolated Lua thread. Related blocks can still share an explicit scope, while separate component instances and hooks cannot leak globals into one another. The filesystem is read-only from inline Lua, dangerous operating-system functions are absent, and emitted markup re-enters the normal component compiler.
+Every block executes in its own isolated and [sandboxed](./sandbox-and-filesystem.md) Lua thread.
+
+`#!lua os.exit(0)` ends the current use successfully. A non-zero code fails that use and therefore the build. It terminates the current thread, not the entire shared Lua state.

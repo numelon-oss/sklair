@@ -11,6 +11,4 @@ This is the first phase with access to `built:`. A post-hook can inspect or writ
 
 Post hooks do not receive the `documents` module. The document plan is already frozen and compiled; adding another request here would mean rebuilding the build from inside its final phase.
 
-Files in `hooks/post` execute alphabetically and each receives an isolated scope. A Lua error or non-zero `os.exit` fails Sklair even though output has already been written, so post-build mutations should be small and intentional. `os.exit(0)` ends the current hook successfully.
-
 Within a post hook, `generated:` refers to the generated asset subtree already copied beneath `built:/_sklair/`. Writes to either namespace affect the current output.

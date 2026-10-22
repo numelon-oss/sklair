@@ -17,7 +17,7 @@ hooks/
     └── 10-manifest.lua
 ```
 
-Files execute alphabetically within each phase. Prefixes are a convenient way to make dependencies visible instead of relying on somebody remembering that `build-search.lua` happens to sort after `articles.lua`.
+Files execute alphabetically within each phase. Numeric prefixes are a convenient way to show the order in which these hooks run.
 
 Sklair uses one Lua runtime per build, but every hook has its own isolated scope and child thread (coroutine). Globals do not leak from one hook file into the next. The standard sandbox, `json`, `markdown`, and `schema` libraries are available, while filesystem permissions and compiler modules depend on the phase.
 

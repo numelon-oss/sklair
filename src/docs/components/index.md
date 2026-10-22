@@ -9,7 +9,7 @@ Sklair components are reusable HTML definitions expanded during compilation. The
 
 An invocation is an ordinary non-standard element whose name matches a discovered component:
 
-```html
+```html title="Component example"
 <ReleaseCard featured="true"></ReleaseCard>
 ```
 

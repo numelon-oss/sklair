@@ -7,7 +7,7 @@
 
 Sklair is a HTML compiler. It gives ordinary HTML build-time components, explicit logic, and serious document generation, then leaves the browser with documents it already understands.
 
-That distinction is the whole project. Sklair is *not* a browser framework which happens to export HTML after doing something considerably stranger. Your source begins as HTML, the compiler extends it at deliberate seams, and the result is still HTML.
+That distinction is the whole project. Sklair is *not* a framework which happens to export HTML after doing something considerably stranger. Your source begins as HTML, the compiler extends it in specific areas where traditional HTML may have fallen short, and the result is still HTML.
 
 ## Start somewhere useful
 
@@ -23,14 +23,10 @@ When you are building something less polite than a five-page website, continue i
 - Static and instance-level Lua which executes during compilation.
 - Sandboxed pre- and post-build hooks.
 - Full-document layouts and any-number-of-documents generation.
-- Immutable Markdown documents and structured heading extraction.
+- Markdown to HTML document gneration, and structured heading extraction.
 - JSON values which preserve arrays, objects, and null.
 - JSON Schema Draft 2020-12 validation.
 - An optional, deliberately tiny 3KB browser runtime for native templates.
 - Deterministic output planning, head ordering, deduplication, and collision errors.
 
-Package-manager distribution, update notifications, hook HTTP, and reusable package registries are not quietly hiding in here. They remain [future work](./future-plans.md) and the documentation does not pretend otherwise.
-
-## Read by task
-
-Use the [project configuration reference](/docs/reference/project-configuration/) when you need exact `sklair.json` fields and the [CLI reference](/docs/reference/cli/) for commands and flags.
+See also: [future work](./future-plans.md), which may or may not be added to Sklair.

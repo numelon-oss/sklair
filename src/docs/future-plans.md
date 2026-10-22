@@ -1,5 +1,5 @@
 {
-  "description": "Planned distribution, tooling, and documentation work for future Sklair releases."
+  "description": "Future plans for Sklair, effectively a to-do list for the developers."
 }
 ---
 

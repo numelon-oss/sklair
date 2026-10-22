@@ -1,9 +1,9 @@
 {
-  "description": "Write compile-time Lua in HTML's native raw-text script form and understand how Sklair recognises it."
+  "description": "Write inline Lua in HTML's native raw-text script form and understand how Sklair recognises it."
 }
 ---
 
-# Compile-time Lua syntax
+# Inline Lua syntax
 
 Embed Lua in a script element with Sklair's MIME type:
 
