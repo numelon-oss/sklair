@@ -13,7 +13,7 @@ This document tells you how to use CI to produce your website and then deploy it
 
 Choose a specific Sklair release in your workflow. Installing the latest release on every build can change compiler behaviour even when your project has not changed.
 
-The workflow example below uses a Linux AMD64 runner, downloads a pinned standalone binary and its SHA-256 checksum, then runs it without installing Go. Set `SKLAIR_VERSION` to an available release which supports your project.
+The workflow example below uses a Linux AMD64 runner, downloads a pinned release archive and `SHA256SUMS`, then runs Sklair without installing Go. Set `SKLAIR_VERSION` to an available release which supports your project. This archive format is used from 0.4.0 onwards.
 
 A versioned `$schema` in `sklair.json` helps your editor describe that version's configuration. It does not however install or select the compiler; the workflow's download determines which version runs.
 
@@ -50,15 +50,16 @@ jobs:
       - name: Install Sklair release
         shell: bash
         run: |
-          cd "$RUNNER_TEMP"
-          mkdir -p dist sklair-bin
+          mkdir -p "$RUNNER_TEMP/sklair-download" "$RUNNER_TEMP/sklair-bin"
+          cd "$RUNNER_TEMP/sklair-download"
           base_url="https://github.com/numelon-oss/sklair/releases/download/$SKLAIR_VERSION"
-          curl --fail --location --retry 3 "$base_url/sklair-linux-amd64" \
-            --output dist/sklair-linux-amd64
-          curl --fail --location --retry 3 "$base_url/sklair-linux-amd64.sha256" \
-            --output sklair.sha256
-          sha256sum --check sklair.sha256
-          install -m 0755 dist/sklair-linux-amd64 sklair-bin/sklair
+          curl --fail --location --retry 3 "$base_url/sklair-linux-amd64.tar.gz" \
+            --output sklair-linux-amd64.tar.gz
+          curl --fail --location --retry 3 "$base_url/SHA256SUMS" \
+            --output SHA256SUMS
+          sha256sum --check --ignore-missing SHA256SUMS
+          tar -xzf sklair-linux-amd64.tar.gz
+          install -m 0755 sklair "$RUNNER_TEMP/sklair-bin/sklair"
           echo "$RUNNER_TEMP/sklair-bin" >> "$GITHUB_PATH"
 
       - name: Build website

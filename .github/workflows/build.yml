@@ -1,159 +1,163 @@
 name: Release
 
 on:
-    push:
-        tags:
-            - "*"
-    workflow_dispatch:
+  push:
+    tags:
+      - "v[0-9]*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version to package. Manual runs never publish a release"
+        required: true
+        default: "0.4.0"
+        type: string
 
 permissions:
-    contents: write
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
-    # fail early if release notes dont exist
-    release-notes-check:
-        runs-on: ubuntu-latest
+  prepare:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.metadata.outputs.version }}
+      tag: ${{ steps.metadata.outputs.tag }}
+      build_date: ${{ steps.metadata.outputs.build_date }}
+      prerelease: ${{ steps.metadata.outputs.prerelease }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Resolve release metadata
+        id: metadata
+        env:
+          REQUESTED_VERSION: ${{ inputs.version }}
+        run: |
+          set -euo pipefail
+          if [[ "$GITHUB_EVENT_NAME" == "push" ]]; then
+            version="${GITHUB_REF_NAME#v}"
+          else
+            version="${REQUESTED_VERSION#v}"
+          fi
+          if [[ ! "$version" =~ ^(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)\.(0|[1-9][0-9]*)(-[0-9A-Za-z]+([.-][0-9A-Za-z]+)*)?$ ]]; then
+            echo "Invalid release version: $version" >&2
+            exit 1
+          fi
+          tag="v$version"
+          if [[ "$GITHUB_EVENT_NAME" == "push" && ! -s "$tag-RELEASE.md" ]]; then
+            echo "Missing release notes: $tag-RELEASE.md" >&2
+            exit 1
+          fi
+          prerelease=false
+          if [[ "$version" == *-* ]]; then prerelease=true; fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$prerelease" >> "$GITHUB_OUTPUT"
 
-        steps:
-            - uses: actions/checkout@v6
+  schema:
+    needs: prepare
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Generate configuration schemas
+        env:
+          RELEASE_TAG: ${{ needs.prepare.outputs.tag }}
+        run: |
+          mkdir -p dist
+          go run -mod=readonly -ldflags "-X sklair/constants.Version=$RELEASE_TAG" \
+            ./tools/schema > "dist/sklair-$RELEASE_TAG.schema.json"
+          cp "dist/sklair-$RELEASE_TAG.schema.json" dist/sklair.schema.json
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sklair-schema
+          path: dist/*
+          if-no-files-found: error
 
-            - name: Fail early if release notes dont exist on a tagged release
-              if: github.ref_type == 'tag'
-              run: |
-                  FILE="${{ github.ref_name }}-RELEASE.md"
+  package:
+    needs: prepare
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [linux, darwin, windows]
+        arch: [amd64, arm64]
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+      - name: Install Debian packaging tool
+        if: matrix.os == 'linux'
+        run: go install github.com/goreleaser/nfpm/v2/cmd/nfpm@v2.48.0
+      - name: Build and package
+        env:
+          RELEASE_VERSION: ${{ needs.prepare.outputs.version }}
+          TARGET_OS: ${{ matrix.os }}
+          TARGET_ARCH: ${{ matrix.arch }}
+          SKLAIR_COMMIT: ${{ github.sha }}
+          SKLAIR_BUILD_DATE: ${{ needs.prepare.outputs.build_date }}
+        run: bash .github/workflows/packaging/package.sh "$RELEASE_VERSION" "$TARGET_OS" "$TARGET_ARCH"
+      - name: Inspect Debian package
+        if: matrix.os == 'linux'
+        run: |
+          dpkg-deb --info dist/*.deb
+          dpkg-deb --contents dist/*.deb
+      - name: Install and run Linux AMD64 package
+        if: matrix.os == 'linux' && matrix.arch == 'amd64'
+        run: |
+          sudo dpkg --install dist/*.deb
+          sklair version
+          sklair --help
+      - uses: actions/upload-artifact@v6
+        with:
+          name: sklair-package-${{ matrix.os }}-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
 
-                  if [ ! -f "$FILE" ]; then
-                      echo "Expected $FILE to exist"
-                      echo "Release notes were not found for this tagged release. Aborting."
-                      exit 1
-                  fi
+  assemble:
+    needs: [schema, package]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v7
+        with:
+          pattern: sklair-*
+          merge-multiple: true
+          path: dist
+      - name: Generate and verify checksums
+        working-directory: dist
+        run: |
+          set -euo pipefail
+          sha256sum -- *.tar.gz *.zip *.deb *.schema.json | LC_ALL=C sort -k2 > SHA256SUMS
+          sha256sum --check SHA256SUMS
+      - uses: actions/upload-artifact@v6
+        with:
+          name: release-bundle
+          path: dist/*
+          if-no-files-found: error
 
-                  echo "Found release notes"
-
-    schema:
-      needs: release-notes-check
-      runs-on: ubuntu-latest
-
-      steps:
-        - name: Checkout
-          uses: actions/checkout@v6
-
-        - name: Setup Go
-          uses: actions/setup-go@v6
-          with:
-            go-version: "1.25"
-
-        - name: Build
-          run: |
-            mkdir -p schema-dist
-            
-            if [ "${{ github.ref_type }}" = "tag" ]; then
-              VERSION="${{ github.ref_name }}"
-            else
-              VERSION="development"
-            fi
-            
-            go run \
-              -ldflags "-X sklair/constants.Version=$VERSION" \
-              ./tools/schema > schema-dist/sklair-$VERSION.schema.json
-
-            cp schema-dist/sklair-$VERSION.schema.json schema-dist/sklair.schema.json
-
-        - name: Upload schema artefact
-          uses: actions/upload-artifact@v6
-          with:
-            name: sklair-schema
-            path: schema-dist/*
-
-    build:
-        needs:
-          - release-notes-check
-          - schema
-        runs-on: ubuntu-latest
-
-        strategy:
-            matrix:
-                include:
-                    - os: linux
-                      arch: amd64
-                    - os: linux
-                      arch: arm64
-
-                    - os: darwin
-                      arch: amd64
-                    - os: darwin
-                      arch: arm64
-
-                    - os: windows
-                      arch: amd64
-                    - os: windows
-                      arch: arm64
-
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-
-            - name: Setup Go
-              uses: actions/setup-go@v6
-              with:
-                  go-version: "1.25"
-
-            - name: Build
-              run: |
-                  set -euo pipefail
-                
-                  mkdir -p dist
-                  EXT=""
-                  if [ "${{ matrix.os }}" = "windows" ]; then EXT=".exe"; fi
-
-                  if [ "${{ github.ref_type }}" = "tag" ]; then
-                    VERSION="${{ github.ref_name }}"
-                  else
-                    VERSION="development"
-                  fi
-
-                  COMMIT=${{ github.sha }}
-                  DATE=$(date -u +"%Y-%m-%d@%H:%M:%S")
-
-                  CGO_ENABLED=0 GOOS=${{ matrix.os }} GOARCH=${{ matrix.arch }} \
-                  go build \
-                    -mod=readonly \
-                    -trimpath \
-                    -ldflags "-s -w \
-                    -X sklair/constants.Version=$VERSION \
-                    -X sklair/constants.Commit=$COMMIT \
-                    -X sklair/constants.BuildDate=$DATE \
-                    " \
-                    -o dist/sklair-${{ matrix.os }}-${{ matrix.arch }}$EXT
-                
-                  sha256sum dist/sklair-${{ matrix.os }}-${{ matrix.arch }}$EXT > dist/sklair-${{ matrix.os }}-${{ matrix.arch }}.sha256
-
-            - name: Upload artefacts
-              uses: actions/upload-artifact@v6
-              with:
-                  name: sklair-${{ matrix.os }}-${{ matrix.arch }}
-                  path: dist/*
-
-    release:
-        needs:
-            - release-notes-check
-            - build
-            - schema
-        runs-on: ubuntu-latest
-
-        steps:
-            - uses: actions/checkout@v6 # this is only used to get the release notes for action-gh-release
-
-            - name: Download artefacts
-              uses: actions/download-artifact@v7
-              with:
-                  path: dist
-                  pattern: sklair-*
-
-            - name: Create release
-              uses: softprops/action-gh-release@v2
-              if: github.ref_type == 'tag'
-              with:
-                  files: dist/**/*
-                  body_path: ${{ github.ref_name }}-RELEASE.md
-                  #   generate_release_notes: true
+  publish:
+    if: github.event_name == 'push'
+    needs: [prepare, assemble]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/download-artifact@v7
+        with:
+          name: release-bundle
+          path: dist
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.prepare.outputs.tag }}
+          name: Sklair ${{ needs.prepare.outputs.version }}
+          prerelease: ${{ needs.prepare.outputs.prerelease == 'true' }}
+          fail_on_unmatched_files: true
+          files: dist/*
+          body_path: ${{ needs.prepare.outputs.tag }}-RELEASE.md

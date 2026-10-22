@@ -1,0 +1,28 @@
+name: sklair
+arch: ${SKLAIR_PACKAGE_ARCH}
+platform: linux
+version: ${SKLAIR_DEB_VERSION}
+version_schema: none
+maintainer: Numelon Open Source
+section: web
+priority: optional
+homepage: https://sklair.numelon.com
+license: AGPL-3.0
+description: |
+  HTML compiler for websites and browser applications
+  Compile HTML components, run Lua during builds, and generate complete
+  documents from Markdown and structured data.
+contents:
+  - src: ${SKLAIR_PACKAGE_BINARY}
+    dst: /usr/bin/sklair
+    expand: true
+    file_info:
+      mode: 0755
+  - src: LICENSE
+    dst: /usr/share/doc/sklair/copyright
+    file_info:
+      mode: 0644
+  - src: README.md
+    dst: /usr/share/doc/sklair/README.md
+    file_info:
+      mode: 0644

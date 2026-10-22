@@ -22,7 +22,7 @@
 				<header class="download-header">
 					<div>
 						<h1>Download Sklair.</h1>
-						<p>Choose the standalone binary matching your operating system and architecture.</p>
+						<p>Choose the archive matching your operating system and architecture.</p>
 					</div>
 					<a class="download-release-link" href="https://github.com/numelon-oss/sklair/releases/latest"
 						target="_blank" rel="noreferrer">
@@ -38,12 +38,27 @@
 						</div>
 						<div class="download-platform__links">
 							<a
-								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-darwin-arm64">
+								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-darwin-arm64.tar.gz">
 								Apple Silicon <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
 							</a>
 							<a
-								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-darwin-amd64">
+								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-darwin-amd64.tar.gz">
 								Intel <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+							</a>
+						</div>
+					</article>
+
+					<article class="download-platform">
+						<div class="download-platform__heading">
+							<i class="fa-brands fa-linux" aria-hidden="true"></i>
+							<h2>Linux</h2>
+						</div>
+						<div class="download-platform__links">
+							<a href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-linux-amd64.tar.gz">
+								AMD64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
+							</a>
+							<a href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-linux-arm64.tar.gz">
+								ARM64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
 							</a>
 						</div>
 					</article>
@@ -55,26 +70,11 @@
 						</div>
 						<div class="download-platform__links">
 							<a
-								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-windows-amd64.exe">
+								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-windows-amd64.zip">
 								AMD64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
 							</a>
 							<a
-								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-windows-arm64.exe">
-								ARM64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-							</a>
-						</div>
-					</article>
-
-					<article class="download-platform">
-						<div class="download-platform__heading">
-							<i class="fa-brands fa-linux" aria-hidden="true"></i>
-							<h2>Linux</h2>
-						</div>
-						<div class="download-platform__links">
-							<a href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-linux-amd64">
-								AMD64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
-							</a>
-							<a href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-linux-arm64">
+								href="https://github.com/numelon-oss/sklair/releases/latest/download/sklair-windows-arm64.zip">
 								ARM64 <i class="fa-solid fa-arrow-up-right-from-square" aria-hidden="true"></i>
 							</a>
 						</div>
@@ -85,15 +85,16 @@
 					<p>
 						<i class="fa-solid fa-terminal" aria-hidden="true"></i>
 						<span>
-							On macOS and Linux, you may need to mark the download as executable with
-							<code>chmod +x sklair</code>. macOS may also require approval under Privacy &amp; Security.
+							Extract the archive and put <code>sklair</code> (or <code>sklair.exe</code>) on your
+							PATH. macOS may require approval under Privacy &amp; Security.
 						</span>
 					</p>
 					<p>
-						<i class="fa-solid fa-box-open" aria-hidden="true"></i>
-						<span>
-							Homebrew, WinGet, and APT distribution are planned. Follow the
-							<a href="/docs/sklair/future-plans/">future plans</a> for progress.
+						<i class="fa-solid fa-check" aria-hidden="true"></i>
+						<span>Verify downloads against the release's
+							<a href="https://github.com/numelon-oss/sklair/releases/latest/download/SHA256SUMS">SHA256SUMS</a>.
+							Linux <code>.deb</code> packages are also available from the
+							<a href="https://github.com/numelon-oss/sklair/releases/latest">release page</a>.
 						</span>
 					</p>
 				</div>

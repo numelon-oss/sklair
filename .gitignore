@@ -5,6 +5,7 @@ sklair.json
 .sklair
 
 # built items
+/dist/
 build
 src/build
 **.zip
