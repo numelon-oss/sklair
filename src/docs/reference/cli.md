@@ -1,5 +1,5 @@
 {
-  "description": "Reference the commands and global options exposed by the current Sklair command-line interface."
+  "description": "Look up Sklair's build, serve, init, and clean commands and global logging options."
 }
 ---
 

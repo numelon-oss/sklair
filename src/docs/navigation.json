@@ -1,7 +1,10 @@
 {
   "directories": {
     ".": {
-      "order": ["getting-started"]
+      "order": ["getting-started", "sklair"]
+    },
+    "sklair": {
+      "order": ["what-is-sklair", "compilation-stages", "head-processing"]
     },
     "getting-started": {
       "order": ["project-structure", "your-first-build", "development-server"],

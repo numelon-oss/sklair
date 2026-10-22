@@ -13,7 +13,7 @@ local validator, err = schema.compile(schema_source, {
 })
 ```
 
-The schema may be a JSON string or a structured Lua object. `source` is an optional filesystem-style provenance path used to resolve relative references and improve diagnostics. Other declared JSON Schema drafts are rejected; Sklair implements Draft 2020-12 and embeds its official meta-schemas.
+The schema may be a JSON string or a structured Lua object. `source` is an optional path identifying the schema's origin. It is used to resolve relative references and improve diagnostics, so it affects reference resolution as well as error messages. Other declared JSON Schema drafts are rejected; Sklair implements Draft 2020-12 and embeds its official meta-schemas.
 
 Remote references are unavailable. If you really need them, just use the HTTP library to retrieve it and pass that in as if it were a local file.
 

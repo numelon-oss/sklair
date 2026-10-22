@@ -1,5 +1,5 @@
 {
-  "description": "Look up Sklair's commands, configuration, directives, runtime API, Lua libraries, and errors."
+  "description": "Look up Sklair's commands, project configuration, browser runtime API, and Lua library APIs."
 }
 ---
 
@@ -11,7 +11,7 @@ This section describes Sklair as it exists, including the slightly awkward edges
 
 - [Command-line interface](./cli/) covers every command and global logging flag.
 - [Project configuration](./project-configuration/) lists every `sklair.json` field, its default, and whether it currently has an effect.
-- [Compiler directives](./directives/) defines the comment syntax for head ordering and source removal.
+- [Compiler directives](../compiler-directives/index.md) defines the comment syntax for head ordering and source removal.
 
 ## Lua libraries
 

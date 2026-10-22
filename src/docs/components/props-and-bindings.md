@@ -1,5 +1,5 @@
 {
-  "description": "Pass compile-time props through component attributes and consume them with Sklair's explicit binding syntax."
+  "description": "Pass props through component attributes and use bindings to set text, attributes, classes, and conditions."
 }
 ---
 

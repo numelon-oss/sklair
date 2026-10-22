@@ -8,4 +8,4 @@
 
 Dynamic Lua runs during compilation for each use of a component or generated layout. It can read that use's props and emit different markup for different values.
 
-See [Dynamic Lua](/docs/compile-time-lua/dynamic-lua/).
+See [Dynamic Lua](/docs/lua/dynamic-lua/).

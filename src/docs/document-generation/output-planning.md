@@ -1,5 +1,5 @@
 {
-  "description": "Understand generated output ownership, normalisation, deterministic ordering, collisions, and source provenance."
+  "description": "Choose generated output paths, understand collision checks, and label document origins for diagnostics."
 }
 ---
 
@@ -20,4 +20,4 @@ documents.render({
 })
 ```
 
-The optional source value appears in diagnostics and collision reports. Use a namespaced value such as `project:articles/compiler.md` when that is the real provenance, but remember that Sklair never opens it on the request's behalf.
+The optional `source` value labels the document's origin in diagnostics and collision reports. A namespaced value such as `project:articles/compiler.md` is useful when the document came from that file. This label is cosmetic: it helps identify the input while debugging, but does not affect rendering or cause Sklair to read a file.

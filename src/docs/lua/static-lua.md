@@ -1,5 +1,5 @@
 {
-  "description": "Run definition-level Lua once per build and reuse its unresolved emitted markup across every instance."
+  "description": "Run Lua once when a document, component, or layout is prepared and reuse its output wherever it is used."
 }
 ---
 

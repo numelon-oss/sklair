@@ -1,5 +1,5 @@
 {
-  "description": "Run instance-level Lua with immutable props and isolated mutable environments."
+  "description": "Run Lua for each use of a component or layout, read its props, and emit content based on their values."
 }
 ---
 

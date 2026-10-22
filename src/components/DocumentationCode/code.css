@@ -126,17 +126,20 @@
 }
 
 .documentation-admonition {
+    --admonition-colour: #286788;
+
     margin: 1.5rem 0;
-    border: 1px solid var(--sklair-rule-strong);
-    border-left: 3px solid var(--sklair-colour-accent-strong);
-    background: var(--sklair-colour-surface);
+    border: 1px solid color-mix(in srgb, var(--admonition-colour) 55%, var(--sklair-rule));
+    border-left: 3px solid var(--admonition-colour);
+    background: color-mix(in srgb, var(--admonition-colour) 9%, var(--sklair-colour-main));
 }
 
 .documentation-admonition__title {
     display: block;
     padding: 0.75rem 1rem;
-    border-bottom: 1px solid var(--sklair-rule);
-    color: var(--sklair-colour-ink);
+    border-bottom: 1px solid color-mix(in srgb, var(--admonition-colour) 28%, transparent);
+    background: color-mix(in srgb, var(--admonition-colour) 10%, transparent);
+    color: var(--admonition-colour);
     font-size: 0.8rem;
 }
 
@@ -152,13 +155,34 @@
     margin-bottom: 0;
 }
 
-.documentation-admonition--warning,
+.documentation-admonition--warning {
+    --admonition-colour: #8c590e;
+}
+
+.documentation-admonition--critical,
 .documentation-admonition--danger {
-    border-left-color: #b84d3f;
+    --admonition-colour: #a33535;
 }
 
 .documentation-admonition--tip {
-    border-left-color: #5d8a65;
+    --admonition-colour: #3e7045;
+}
+
+:root[data-theme="dark"] .documentation-admonition {
+    --admonition-colour: #81b9df;
+}
+
+:root[data-theme="dark"] .documentation-admonition--warning {
+    --admonition-colour: #e2b668;
+}
+
+:root[data-theme="dark"] .documentation-admonition--critical,
+:root[data-theme="dark"] .documentation-admonition--danger {
+    --admonition-colour: #ef9595;
+}
+
+:root[data-theme="dark"] .documentation-admonition--tip {
+    --admonition-colour: #98c79e;
 }
 
 .documentation-code-block__copy:hover,

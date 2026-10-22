@@ -1,5 +1,5 @@
 {
-  "description": "Let body-invoked components contribute deduplicated and ordered nodes to the final document head."
+  "description": "Add metadata, styles, and scripts to a document head from components used in its body."
 }
 ---
 
@@ -36,10 +36,6 @@ The same resolved component instance contributes at most once per document. Inst
 
 ## Final head processing
 
-<!-- TODO: write separate page about head processing, including the processing order -->
-
-After component resolution, Sklair segments the complete head. Ordinary duplicate nodes are removed by a structural weak hash and segments are stably ordered according to browser loading significance.
-
-Ordering-barrier segments keep their internal order and are not deduplicated node by node. Use them only where an actual dependency sequence exists.
+After component resolution, contributions join the document's head for deduplication and sorting. See [Head processing](../sklair/head-processing.md) for the comparison rules, priority order, and [ordering barriers](../compiler-directives/ordering-barriers.md).
 
 Head bindings and dynamic Lua use the component instance's props just like body markup. Runtime template heads are different: they are contributed statically and cannot contain runtime bindings.

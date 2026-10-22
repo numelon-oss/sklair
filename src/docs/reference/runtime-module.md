@@ -1,5 +1,5 @@
 {
-  "description": "Reference the optional browser runtime's renderTemplate function, values, bodies, return value, and failures."
+  "description": "Use renderTemplate to fill a registered browser template and receive a DocumentFragment."
 }
 ---
 

@@ -1,5 +1,5 @@
 {
-  "description": "Parse Markdown once, render HTML, and inspect stable duplicate-safe headings through Sklair's Lua API."
+  "description": "Parse Markdown, render HTML, inspect headings and links, and use code options and admonitions."
 }
 ---
 
@@ -47,7 +47,16 @@ Use an admonition when information should not disappear into the surrounding par
     Only pass HTML which you control or have deliberately sanitised.
 ```
 
-The type becomes a `documentation-admonition--<type>` class, allowing generated sites to style `note`, `info`, `tip`, `warning`, `danger`, or their own names.
+The type becomes a `documentation-admonition--<type>` class. This documentation uses:
+
+| Type | Colour | Use |
+| --- | --- | --- |
+| `info` | Blue | Additional information or context |
+| `tip` | Green | Advice and shortcuts |
+| `warning` | Amber | Behaviour that needs attention |
+| `critical` | Red | Unsafe input, possible data loss, or other serious consequences |
+
+`note` uses the info styling and `danger` uses the critical styling. The whole box is tinted, with a stronger title background and matching border. Custom types are also accepted; generated sites can supply their own CSS.
 
 ## `#!lua document:to_html(options?)`
 

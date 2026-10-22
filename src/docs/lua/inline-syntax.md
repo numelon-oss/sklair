@@ -1,5 +1,5 @@
 {
-  "description": "Write inline Lua in HTML's native raw-text script form and understand how Sklair recognises it."
+  "description": "Embed Lua in HTML with application/x-sklair-lua script tags and select static or dynamic execution."
 }
 ---
 

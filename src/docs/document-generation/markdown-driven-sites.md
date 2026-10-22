@@ -1,5 +1,5 @@
 {
-  "description": "Generate structured sites from Markdown and validated data without writing final HTML from hooks."
+  "description": "Read Markdown files in a pre-build hook and render pages with headings, metadata, and a shared layout."
 }
 ---
 

@@ -1,5 +1,5 @@
 {
-  "description": "Reference Sklair's JSON decoding, encoding, null value, and explicit array and object constructors for Lua."
+  "description": "Decode and encode JSON in Lua and preserve null values, arrays, and objects."
 }
 ---
 

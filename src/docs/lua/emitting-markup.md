@@ -1,5 +1,5 @@
 {
-  "description": "Emit escaped text, trusted HTML fragments, and unresolved component invocations from compile-time Lua."
+  "description": "Use sklair.text, sklair.html, and sklair.component to create content from inline Lua."
 }
 ---
 
@@ -21,9 +21,11 @@ sklair.text(value)
 sklair.html('<strong class="status">Ready</strong>')
 ```
 
-<!-- TODO: this section is a good argument for introducing admonitions. something as important as raw html not being trusted should be a big fat warning! not some delightfully composed prose, sleekly hidden. -->
+The string is parsed as a HTML fragment in the script element's exact parent context.
 
-The string is parsed as a HTML fragment in the script element's exact parent context. It is trusted markup, not escaped content; only pass source you control or have deliberately sanitised.
+!!! critical "Trusted HTML"
+
+    `#!lua sklair.html` inserts HTML without escaping it. Only pass source you control or have deliberately sanitised. Use `#!lua sklair.text` for plain text from users or other untrusted sources.
 
 ## Component invocations
 

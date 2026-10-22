@@ -1,5 +1,5 @@
 {
-  "description": "Register generated documents from pre-build Lua with a layout, output path, structured props, body, and provenance."
+  "description": "Register generated documents with a layout, output path, props, HTML body, and an optional origin label."
 }
 ---
 
@@ -24,7 +24,7 @@ documents.render({
 | --- | --- | --- |
 | `layout` | yes | discovered layout name |
 | `output` | yes | final path relative to the output root |
-| `source` | no | non-empty provenance label used in diagnostics |
+| `source` | no | non-empty origin label used in diagnostics |
 | `props` | no | structured layout props |
 | `body` | no | HTML fragment projected into the layout slot |
 
@@ -32,4 +32,4 @@ Unknown fields and non-string keys are errors. `layout` and `output` must be non
 
 Props accept strings, numbers, booleans, arrays, objects, and explicit `json.null`. The top level must be an object, and prop names are normalised to lowercase without whitespace. Sklair snapshots the entire request at call time, including nested props, so later Lua mutations cannot alter an already queued document.
 
-`source` is provenance, not an instruction to read a file. It makes an error say which input produced the request. The hook remains responsible for reading that input and supplying the compiled body.
+`source` labels the document's origin for debugging, error messages, and collision reports. It is a descriptive label: changing it does not change the rendered content or output path, and Sklair does not open it as a file. The hook remains responsible for reading the input and supplying the body.

@@ -12,3 +12,5 @@ This is the first phase with access to `built:`. A post-hook can inspect or writ
 Post hooks do not receive the `documents` module. The document plan is already frozen and compiled; adding another request here would mean rebuilding the build from inside its final phase.
 
 Within a post hook, `generated:` refers to the generated asset subtree already copied beneath `built:/_sklair/`. Writes to either namespace affect the current output.
+
+See [Filesystem](../lua/filesystem.md) for the complete namespace permission table.

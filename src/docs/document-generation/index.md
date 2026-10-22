@@ -1,5 +1,5 @@
 {
-  "description": "Turn data and content into any number of complete HTML documents through Sklair's ordinary compiler."
+  "description": "Generate HTML pages from Markdown or data using pre-build hooks and reusable full-document layouts."
 }
 ---
 

@@ -1,5 +1,5 @@
 {
-  "description": "Project caller-owned content into a component through its single default slot."
+  "description": "Pass content inside a component tag and choose where it appears with a default slot."
 }
 ---
 

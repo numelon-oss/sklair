@@ -1,5 +1,5 @@
 {
-  "description": "Define reusable full-document layouts with structured props, compile-time Lua, components, and a projected body."
+  "description": "Create a complete HTML layout, pass structured props, and insert generated content into its slot."
 }
 ---
 

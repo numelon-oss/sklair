@@ -1,5 +1,5 @@
 {
-  "description": "Compose components recursively while Sklair resolves dependencies, propagates contributions, and rejects cycles."
+  "description": "Use components inside other components and understand how their heads, assets, and templates are included."
 }
 ---
 

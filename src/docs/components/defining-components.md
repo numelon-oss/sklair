@@ -1,5 +1,5 @@
 {
-  "description": "Define a Sklair component and invoke it from a HTML source document or another component."
+  "description": "Create a HTML component with head and body content, then use it in a document or another component."
 }
 ---
 
@@ -47,8 +47,4 @@ Component attributes become compile-time props. Child nodes are rejected unless 
 
 Native HTML elements always remain native. An unknown non-standard element which has no matching component is preserved as an [autonomous custom element](https://developer.mozilla.org/docs/Web/API/Web_components/Using_custom_elements) and produces a warning.
 
-## Lazy preparation
-
-Discovery records component names and entry paths. Sklair parses a definition only when a source document, generated document, layout, or another component reaches it. The prepared definition is cached for the build.
-
-This matters for static Lua and large component libraries: used definitions perform their work once, while unused definitions do no work at all.
+See [Compilation stages](../sklair/compilation-stages.md) for when components are prepared and reused during a build.

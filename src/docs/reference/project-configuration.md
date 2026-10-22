@@ -1,5 +1,5 @@
 {
-  "description": "Reference every implemented field in sklair.json, its default, and its effect on discovery and compilation."
+  "description": "Look up sklair.json fields, defaults, source paths, exclusions, hooks, templates, and build options."
 }
 ---
 

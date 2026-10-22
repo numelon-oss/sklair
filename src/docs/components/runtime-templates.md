@@ -1,5 +1,5 @@
 {
-  "description": "Register selected components as native browser templates and render lightweight runtime instances only where needed."
+  "description": "Register components as native templates and clone them in the browser with values and optional body content."
 }
 ---
 

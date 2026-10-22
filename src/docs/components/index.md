@@ -1,5 +1,5 @@
 {
-  "description": "Compose reusable HTML at build time with components that can contribute body markup, head nodes, assets, props, and bodies."
+  "description": "Create reusable HTML components with props, bodies, head contributions, and colocated assets."
 }
 ---
 
@@ -19,7 +19,7 @@ After compilation, that tag is gone. Its resolved body occupies the same positio
 
 A definition is parsed as a HTML document. Its `<head>` describes document-level dependencies and its `<body>` contains the markup which replaces an invocation. There is no second component language and no string interpolation syntax hidden between the tags.
 
-Use [props and bindings](/docs/components/props-and-bindings/) when an instance needs scalar variation. Use a [body and default slot](/docs/components/bodies-and-slots/) when the caller owns content inside the reusable shell. Use [compile-time Lua](/docs/compile-time-lua/) when the decision is genuinely more involved than a binding.
+Use [props and bindings](/docs/components/props-and-bindings/) when an instance needs scalar variation. Use a [body and default slot](/docs/components/bodies-and-slots/) when the caller owns content inside the reusable shell. Use [compile-time Lua](/docs/lua/) when the decision is genuinely more involved than a binding.
 
 ## Composition
 

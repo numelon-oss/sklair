@@ -1,9 +1,9 @@
 {
-  "description": "Understand the libraries and read-only filesystem namespaces available to inline compile-time Lua."
+  "description": "Look up shared Lua libraries, execution scopes, print output, errors, and os.exit behaviour."
 }
 ---
 
-# Sandbox and filesystem
+# Lua environment
 
 Lua is safely sandboxed in Sklair to prevent malicious use. The base, table, string, math, and safe portions of the OS library (e.g. `#!lua os.date` and `#!lua os.time`) are available. Other things like process execution, arbitrary file loading and other host operations are not available for obvious reasons.
 
@@ -24,20 +24,10 @@ Scopes decide where deliberate state is shared:
 
 Within a scope, ordinary Lua globals survive from one block to the next. Threads still make execution boundaries explicit, particularly for `os.exit` and error reporting.
 
-## Read-only filesystem
+## Errors and `#!lua os.exit`
 
-Inline Lua receives `#!lua fs.read(path)` and `#!lua fs.scandir(path)`, but not `#!lua fs.write`. Build inputs should be prepared in pre-build hooks, before document compilation begins.
+An unhandled Lua error fails the build. `#!lua os.exit(0)` ends the current block or hook successfully; a non-zero exit code fails that use and the build. It ends the current child thread, not the shared Lua state. After a successful hook exit, Sklair continues with the next hook.
 
-Available namespaces are:
+## Filesystem access
 
-| Namespace | Inline access | Meaning |
-| --- | --- | --- |
-| `project:` | read | configured input tree |
-| `cache:` | read | persistent project build cache |
-| `temp:` | read | build-local temporary workspace |
-| `generated:` | read | assets prepared by pre-build hooks |
-| `built:` | unavailable | completed output, which does not exist at the time of inline usage |
-
-Namespace resolution rejects traversal beyond its permitted root. The one intentional project exception is `project:../`, which exposes the directory immediately containing the configured input tree; it exists for project-owned files placed beside `src`, not as a route through the rest of the machine.
-
-Filesystem operations return Lua errors with the resolved namespace context. Use hooks when writes are genuinely part of the build; inline code should only observe the plan it is compiling.
+Inline Lua receives `#!lua fs.read(path)` and `#!lua fs.scandir(path)`, but not `#!lua fs.write`. Hooks also receive write access where their phase allows it. See [Filesystem](./filesystem.md) for namespaces, lifetimes, and the complete permission table.
