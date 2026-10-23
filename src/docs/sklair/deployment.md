@@ -13,9 +13,13 @@ This document tells you how to use CI to produce your website and then deploy it
 
 Choose a specific Sklair release in your workflow. Installing the latest release on every build can change compiler behaviour even when your project has not changed.
 
-The workflow example below uses a Linux AMD64 runner, downloads a pinned release archive and `SHA256SUMS`, then runs Sklair without installing Go. Set `SKLAIR_VERSION` to an available release which supports your project. This archive format is used from 0.4.0 onwards.
+The workflow below uses [Setup Sklair](https://github.com/numelon-oss/setup-sklair) to download a pinned release and add it to your runner's PATH. Set its `version` input to a release which supports your project.
 
-A versioned `$schema` in `sklair.json` helps your editor describe that version's configuration. It does not however install or select the compiler; the workflow's download determines which version runs.
+!!! info "Setup Sklair support"
+
+    The custom Setup Sklair action supports version 0.4.0 and above.
+
+A versioned `$schema` in `sklair.json` helps your editor describe that version's configuration. It does not however install or select the compiler; the action's `version` input determines which version runs.
 
 ## Deploy to GitHub Pages
 
@@ -37,9 +41,6 @@ concurrency:
   group: github-pages
   cancel-in-progress: false
 
-env:
-  SKLAIR_VERSION: v0.4.0
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -47,20 +48,9 @@ jobs:
       - uses: actions/checkout@v6
       - uses: actions/configure-pages@v5
 
-      - name: Install Sklair release
-        shell: bash
-        run: |
-          mkdir -p "$RUNNER_TEMP/sklair-download" "$RUNNER_TEMP/sklair-bin"
-          cd "$RUNNER_TEMP/sklair-download"
-          base_url="https://github.com/numelon-oss/sklair/releases/download/$SKLAIR_VERSION"
-          curl --fail --location --retry 3 "$base_url/sklair-linux-amd64.tar.gz" \
-            --output sklair-linux-amd64.tar.gz
-          curl --fail --location --retry 3 "$base_url/SHA256SUMS" \
-            --output SHA256SUMS
-          sha256sum --check --ignore-missing SHA256SUMS
-          tar -xzf sklair-linux-amd64.tar.gz
-          install -m 0755 sklair "$RUNNER_TEMP/sklair-bin/sklair"
-          echo "$RUNNER_TEMP/sklair-bin" >> "$GITHUB_PATH"
+      - uses: numelon-oss/setup-sklair@v1
+        with:
+          version: '0.4.0'
 
       - name: Build website
         run: sklair build
@@ -84,9 +74,17 @@ jobs:
         id: deployment
 ```
 
-The upload path must match your configured output directory. This example assumes `sklair.json` is at the repository root and its output is `build`. If your configuration is `src/sklair.json` with output `./build`, use `src/build` instead.
+The upload path must match your configured output directory. This example assumes `sklair.json` is at the repository root and its output is `build`. If your configuration is `src/sklair.json` with output `./build`, add `working-directory: src` to the build step and upload `src/build` instead.
 
 Any push to the `main` branch of your repository will build and deploy the website. Manual runs on other branches build it without deploying.
+
+## Other CI services
+
+Download a pinned archive and its `SHA256SUMS` from [GitHub Releases](https://github.com/numelon-oss/sklair/releases), verify the archive's SHA-256 checksum, then extract it and add the executable to `PATH`.
+
+Then, run `sklair build` and pass the configured output directory to your deployment tool.
+
+The compiler does not depend on GitHub Actions. Note that GitHub Actions does support third-party runers.
 
 ## URLs and custom domains
 
